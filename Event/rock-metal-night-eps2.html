@@ -6,7 +6,7 @@
 <title>Rock & Metal Night Eps.2 - DIMSPRAT</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-<link href="../style.css" rel="stylesheet">
+<link href="https://www.dimsprat.site/style.css" rel="stylesheet">
 <style>
 
 /* --- Counter --- */
@@ -78,6 +78,83 @@ textarea { resize:none; }
 
 /* --- Upload --- */
 .upload-box { border:2px dashed red;padding:20px;text-align:center;margin:15px 0;border-radius:6px; }
+
+/* --- Radio Buttons --- */
+.radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 8px 0 4px;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  transition: all 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.radio-option:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 0, 0, 0.3);
+}
+
+.radio-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.radio-custom {
+  position: relative;
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #666;
+  border-radius: 50%;
+  margin-right: 10px;
+  transition: all 0.2s ease;
+}
+
+.radio-option input:checked + .radio-custom {
+  border-color: #ff0000;
+  background-color: #ff0000;
+  box-shadow: 0 0 0 2px rgba(255, 0, 0, 0.2);
+}
+
+.radio-custom::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: white;
+  transform: scale(0);
+  transition: transform 0.2s ease;
+}
+
+.radio-option input:checked + .radio-custom::after {
+  transform: scale(1);
+}
+
+.radio-label {
+  font-size: 14px;
+  color: #fff;
+  font-weight: 400;
+  transition: color 0.2s ease;
+}
+
+.radio-option input:checked ~ .radio-label {
+  color: #fff;
+  font-weight: 500;
+}
 
 /* --- Terms --- */
 .terms { margin-top:10px; }
@@ -178,6 +255,31 @@ textarea { resize:none; }
   <div class="form-group">
     <label for="Nomor WhatsApp">Nomor WhatsApp*</label>
     <input type="text" id="wa" placeholder="Nomor WhatsApp (format: 62...)*" required pattern="62[0-9]{8,15}" title="Nomor WhatsApp harus diawali 62 dan hanya angka">
+  </div>
+  <div class="form-group">
+    <label class="form-label">Komunitas*</label>
+    <div class="radio-group">
+        <label class="radio-option">
+            <input type="radio" name="Komunitas" value="OOR" required>
+            <span class="radio-custom"></span>
+            <span class="radio-label">OOR</span>
+        </label>
+        <label class="radio-option">
+            <input type="radio" name="Komunitas" value="Laruku">
+            <span class="radio-custom"></span>
+            <span class="radio-label">Laruku</span>
+        </label>
+        <label class="radio-option">
+            <input type="radio" name="Komunitas" value="A7x">
+            <span class="radio-custom"></span>
+            <span class="radio-label">A7x</span>
+        </label>
+        <label class="radio-option">
+            <input type="radio" name="Komunitas" value="Umum" checked>
+            <span class="radio-custom"></span>
+            <span class="radio-label">Umum</span>
+        </label>
+      </div>
   </div>
   <div class="form-group">
     <label for="rekomendasi">Rekomendasi untuk Event Selanjutnya*</label>
@@ -309,6 +411,5 @@ textarea { resize:none; }
   </div>
 </div>
 <script src="js/rock-metal-night-eps2.js"></script>
-
 </body>
 </html>
