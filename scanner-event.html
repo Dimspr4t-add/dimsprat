@@ -2,183 +2,188 @@
 <html lang="id">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Scanner Tiket - Check-in</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>Scanner Tiket - Fullscreen</title>
   <style>
-    body { font-family: Inter, system-ui, sans-serif; display:flex; flex-direction:column; align-items:center; padding:18px; background:#f5f7fb; color:#111; }
-    h1 { margin:12px 0 6px; font-size:20px; }
-    #reader { width:100%; max-width:420px; border-radius:12px; overflow:hidden; background:#000; }
-    .status { margin-top:12px; min-height:48px; width:100%; max-width:420px; text-align:center; padding:10px; border-radius:8px; }
-    .ok { background:#e6ffef; color:#026a2f; border:1px solid #a6e9c8; }
-    .error { background:#ffecec; color:#8a1b1b; border:1px solid #f3b0b0; }
-    .info { background:#fff; color:#444; border:1px solid #e5e9ef; }
-    .controls { margin-top:12px; display:flex; gap:8px; }
-    button { padding:8px 12px; border-radius:8px; border:none; cursor:pointer; }
-    .btn-primary { background:#0b61ff; color:white; }
-    .btn-secondary { background:#fff; border:1px solid #d0d7e6; }
-    .small { font-size:13px; color:#666; margin-top:6px; }
+    html, body {
+      margin:0; padding:0;
+      width:100%; height:100%;
+      background:#000; color:#fff;
+      font-family: Arial, sans-serif;
+      overflow:hidden;
+    }
+    #reader {
+      width:100%; height:100%;
+      object-fit:cover;
+    }
+    .overlay {
+      position: absolute;
+      top:0; left:0; right:0; bottom:0;
+      display:flex; flex-direction:column; justify-content:space-between;
+      pointer-events:none;
+    }
+    .top-bar, .bottom-bar {
+      background:rgba(0,0,0,0.4);
+      padding:10px;
+      display:flex; justify-content:space-between; align-items:center;
+      pointer-events:auto;
+    }
+    .status {
+      text-align:center;
+      padding:8px;
+      font-size:14px;
+      border-radius:6px;
+    }
+    .ok { background:#0a0; }
+    .error { background:#a00; }
+    .info { background:#444; }
+    button {
+      background:rgba(255,255,255,0.15);
+      border:none; color:#fff;
+      padding:8px 12px; margin:0 4px;
+      border-radius:6px; font-size:14px;
+      cursor:pointer;
+    }
+    button:active { background:rgba(255,255,255,0.3); }
   </style>
-  <!-- HTML5 QR Code library -->
   <script src="https://unpkg.com/html5-qrcode@2.3.7/minified/html5-qrcode.min.js"></script>
 </head>
 <body>
-  <h1>Scanner Tiket — Check-in</h1>
-
   <div id="reader"></div>
-
-  <div class="controls">
-    <button id="startBtn" class="btn-primary">Mulai Scan</button>
-    <button id="stopBtn" class="btn-secondary">Berhenti</button>
+  <div class="overlay">
+    <div class="top-bar">
+      <div id="status" class="status info">Siap scan...</div>
+    </div>
+    <div class="bottom-bar">
+      <button id="switchBtn">🔄 Ganti Kamera</button>
+      <button id="flashBtn">💡 Flash</button>
+      <button id="stopBtn">⏹ Stop</button>
+    </div>
   </div>
 
-  <div id="status" class="status info">Status: siap</div>
-  <div id="detail" class="small"></div>
+<script>
+const VERIFY_URL = "https://script.google.com/macros/s/AKfycbxEXAMPLE/exec"; // ganti
+const API_TOKEN  = "CHANGE_THIS_TOKEN"; // ganti
 
-  <script>
-    // CONFIG: ganti URL dan TOKEN sesuai deploy Google Apps Script-mu
-    const VERIFY_URL = "https://script.google.com/macros/s/AKfycbxEXAMPLE/exec"; // <-- ganti ini
-    const API_TOKEN  = "CHANGE_THIS_TOKEN"; // <-- ganti ke token secret
+let html5QrCode;
+let currentCameraId = null;
+let cameras = [];
+let flashOn = false;
 
-    const html5QrCode = new Html5Qrcode(/* element id */ "reader");
-    const qrboxSize = 280;
+const statusEl = document.getElementById("status");
+const switchBtn = document.getElementById("switchBtn");
+const flashBtn = document.getElementById("flashBtn");
+const stopBtn = document.getElementById("stopBtn");
 
-    const statusEl = document.getElementById("status");
-    const detailEl = document.getElementById("detail");
-    const startBtn = document.getElementById("startBtn");
-    const stopBtn  = document.getElementById("stopBtn");
+function setStatus(msg, type="info"){
+  statusEl.textContent = msg;
+  statusEl.className = `status ${type}`;
+}
 
-    function setStatus(text, cls="info"){
-      statusEl.textContent = text;
-      statusEl.className = `status ${cls}`;
+async function verifyTicket(code) {
+  setStatus("Memverifikasi...", "info");
+  try {
+    const resp = await fetch(VERIFY_URL + "?ticket=" + encodeURIComponent(code) + "&token=" + API_TOKEN);
+    const json = await resp.json();
+    if (json.ok && json.status === "ok") {
+      setStatus("✅ Tiket VALID - " + (json.name||""), "ok");
+      playBeep(1000);
+    } else if (json.ok && json.status === "used") {
+      setStatus("⚠️ Tiket SUDAH dipakai - " + (json.name||""), "error");
+      playBeep(600);
+    } else {
+      setStatus("❌ Tiket TIDAK valid", "error");
+      playBeep(300);
     }
+  } catch (e) {
+    setStatus("Gagal koneksi", "error");
+  }
+}
 
-    function setDetail(text){
-      detailEl.textContent = text || "";
-    }
+function playBeep(freq=1000) {
+  const ctx = new (window.AudioContext||window.webkitAudioContext)();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type="sine"; osc.frequency.value=freq;
+  osc.connect(gain); gain.connect(ctx.destination);
+  gain.gain.setValueAtTime(0.2, ctx.currentTime);
+  osc.start(); osc.stop(ctx.currentTime+0.2);
+}
 
-    async function verifyTicket(code) {
-      setStatus("Memverifikasi tiket...", "info");
-      setDetail("Kode: " + code);
+async function startCamera(cameraId){
+  if(html5QrCode){
+    await html5QrCode.stop().catch(()=>{});
+    document.getElementById("reader").innerHTML="";
+  }
+  html5QrCode = new Html5Qrcode("reader");
+  currentCameraId = cameraId;
 
-      try {
-        const resp = await fetch(VERIFY_URL + "?ticket=" + encodeURIComponent(code), {
-          method: "GET",
-          headers: {
-            "x-api-token": API_TOKEN,
-            "Accept": "application/json"
-          }
+  html5QrCode.start(
+    cameraId,
+    { fps:15, qrbox:{width:250, height:250} },
+    qrCodeMessage => {
+      if (qrCodeMessage) {
+        html5QrCode.pause(true);
+        verifyTicket(qrCodeMessage).finally(()=>{
+          setTimeout(()=>html5QrCode.resume(),1200);
         });
-        if (!resp.ok) {
-          const text = await resp.text();
-          throw new Error("HTTP " + resp.status + " - " + text);
-        }
-        const json = await resp.json();
-
-        // contoh response: { ok:true, status:"ok"|"used"|"not_found", name:"Nama", email:"", message:"" }
-        if (json.ok && json.status === "ok") {
-          setStatus("Tiket VALID — Check-in berhasil ✅", "ok");
-          setDetail(`${json.name || "-"} • ${json.email || "-"}`);
-          // bunyikan beep singkat
-          playBeep();
-        } else if (json.ok && json.status === "used") {
-          setStatus("Tiket sudah digunakan sebelumnya ⚠️", "error");
-          setDetail(`${json.name || "-"} • ${json.email || "-"}`);
-          playBeep(2);
-        } else {
-          setStatus("Tiket TIDAK DITEMUKAN / tidak valid ❌", "error");
-          setDetail(json.message || "");
-          playBeep(3);
-        }
-      } catch (err) {
-        setStatus("Kesalahan jaringan / server", "error");
-        setDetail(err.message);
-        console.error(err);
       }
+    },
+    errorMessage => {}
+  ).then(() => {
+    setStatus("Kamera aktif", "info");
+  }).catch(err => {
+    setStatus("Gagal buka kamera: " + err, "error");
+  });
+}
+
+async function init(){
+  try {
+    cameras = await Html5Qrcode.getCameras();
+    if(cameras.length===0){ setStatus("Tidak ada kamera", "error"); return; }
+    // default: kamera belakang jika ada
+    let cam = cameras[0].id;
+    for (let c of cameras) {
+      if(/back|rear/i.test(c.label)) { cam = c.id; break; }
     }
+    startCamera(cam);
+  } catch(e){
+    setStatus("Error akses kamera: "+e, "error");
+  }
+}
 
-    // Beep helper
-    function playBeep(type = 1) {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.type = "sine";
-      if (type === 1) o.frequency.value = 1000;
-      if (type === 2) o.frequency.value = 600;
-      if (type === 3) o.frequency.value = 250;
-      o.connect(g);
-      g.connect(ctx.destination);
-      g.gain.value = 0.0001;
-      o.start();
-      g.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.01);
-      g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.3);
-      o.stop(ctx.currentTime + 0.31);
+switchBtn.onclick = ()=>{
+  if(cameras.length<2){ setStatus("Hanya ada 1 kamera", "info"); return; }
+  const idx = cameras.findIndex(c=>c.id===currentCameraId);
+  const next = cameras[(idx+1)%cameras.length];
+  startCamera(next.id);
+};
+
+flashBtn.onclick = async ()=>{
+  if(!html5QrCode) return;
+  try {
+    const capabilities = await html5QrCode.getRunningTrackCapabilities();
+    if(capabilities.torch){
+      flashOn = !flashOn;
+      await html5QrCode.applyVideoConstraints({ advanced: [{torch: flashOn}] });
+      flashBtn.textContent = flashOn ? "💡 Flash ON" : "💡 Flash OFF";
+    } else {
+      setStatus("Flash tidak didukung", "info");
     }
+  } catch(e){
+    setStatus("Tidak bisa toggle flash", "error");
+  }
+};
 
-    let isScanning = false;
+stopBtn.onclick = async ()=>{
+  if(html5QrCode){
+    await html5QrCode.stop();
+    document.getElementById("reader").innerHTML="";
+    setStatus("Scanner berhenti", "info");
+  }
+};
 
-    async function startScanner() {
-      if (isScanning) return;
-      setStatus("Mencari kamera...", "info");
-
-      try {
-        const devices = await Html5Qrcode.getCameras();
-        if (!devices || devices.length === 0) {
-          setStatus("Tidak ada kamera terdeteksi", "error");
-          return;
-        }
-        // pilih kamera belakang bila ada
-        let cameraId = devices[0].id;
-        for (const d of devices) {
-          if (d.label && /back|rear|belakang/i.test(d.label)) { cameraId = d.id; break; }
-        }
-
-        await html5QrCode.start(
-          cameraId,
-          {
-            fps: 15,
-            qrbox: Math.min(qrboxSize, window.innerWidth - 40)
-          },
-          qrCodeMessage => {
-            // ketika scan berhasil
-            if (!qrCodeMessage) return;
-            // hentikan scanning sementara untuk hindari double-scan
-            html5QrCode.pause(true);
-            isScanning = true;
-            verifyTicket(qrCodeMessage).finally(() => {
-              // resume scanning setelah 1.2 detik
-              setTimeout(() => {
-                html5QrCode.resume();
-                isScanning = false;
-                setStatus("Siap scan", "info");
-              }, 1200);
-            });
-          },
-          errorMessage => {
-            // ignore small errors
-          }
-        );
-        setStatus("Siap scan", "info");
-      } catch (err) {
-        setStatus("Gagal mulai kamera: " + err.message, "error");
-        console.error(err);
-      }
-    }
-
-    async function stopScanner() {
-      try {
-        await html5QrCode.stop();
-        html5QrCode.clear();
-        setStatus("Scanner berhenti", "info");
-      } catch (err) {
-        console.warn("stop error", err);
-      }
-    }
-
-    startBtn.addEventListener("click", startScanner);
-    stopBtn.addEventListener("click", stopScanner);
-
-    // auto-start for convenience
-    // startScanner();
-  </script>
+init();
+</script>
 </body>
 </html>
