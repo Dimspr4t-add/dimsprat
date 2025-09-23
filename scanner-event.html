@@ -1,189 +1,139 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <title>Scanner Tiket - Fullscreen</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Scanner Fullscreen</title>
   <style>
-    html, body {
-      margin:0; padding:0;
-      width:100%; height:100%;
-      background:#000; color:#fff;
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: black;
+      overflow: hidden;
       font-family: Arial, sans-serif;
-      overflow:hidden;
     }
-    #reader {
-      width:100%; height:100%;
-      object-fit:cover;
+    #video {
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
     }
-    .overlay {
-      position: absolute;
-      top:0; left:0; right:0; bottom:0;
-      display:flex; flex-direction:column; justify-content:space-between;
-      pointer-events:none;
+    #overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      border: 100vmax solid rgba(0,0,0,0.4);
+      border-top: 30vh solid rgba(0,0,0,0.4);
+      border-bottom: 30vh solid rgba(0,0,0,0.4);
+      border-left: 15vw solid rgba(0,0,0,0.4);
+      border-right: 15vw solid rgba(0,0,0,0.4);
+      box-sizing: border-box;
+      pointer-events: none;
     }
-    .top-bar, .bottom-bar {
-      background:rgba(0,0,0,0.4);
-      padding:10px;
-      display:flex; justify-content:space-between; align-items:center;
-      pointer-events:auto;
+    /* Modal */
+    #modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7);
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
     }
-    .status {
-      text-align:center;
-      padding:8px;
-      font-size:14px;
-      border-radius:6px;
+    #modalContent {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 90%;
+      text-align: center;
     }
-    .ok { background:#0a0; }
-    .error { background:#a00; }
-    .info { background:#444; }
-    button {
-      background:rgba(255,255,255,0.15);
-      border:none; color:#fff;
-      padding:8px 12px; margin:0 4px;
-      border-radius:6px; font-size:14px;
-      cursor:pointer;
+    #modalContent p {
+      margin-bottom: 20px;
+      word-break: break-all;
     }
-    button:active { background:rgba(255,255,255,0.3); }
+    #closeBtn {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+    }
   </style>
-  <script src="https://unpkg.com/html5-qrcode@2.3.7/minified/html5-qrcode.min.js"></script>
 </head>
 <body>
-  <div id="reader"></div>
-  <div class="overlay">
-    <div class="top-bar">
-      <div id="status" class="status info">Siap scan...</div>
-    </div>
-    <div class="bottom-bar">
-      <button id="switchBtn">🔄 Ganti Kamera</button>
-      <button id="flashBtn">💡 Flash</button>
-      <button id="stopBtn">⏹ Stop</button>
+  <video id="video" autoplay></video>
+  <div id="overlay"></div>
+
+  <!-- Modal -->
+  <div id="modal">
+    <div id="modalContent">
+      <h3>✅ QR Code Terdeteksi</h3>
+      <p id="scanResult"></p>
+      <button id="closeBtn">Tutup</button>
     </div>
   </div>
 
-<script>
-const VERIFY_URL = "https://script.google.com/macros/s/AKfycbxEXAMPLE/exec"; // ganti
-const API_TOKEN  = "CHANGE_THIS_TOKEN"; // ganti
+  <script src="https://unpkg.com/qr-scanner/qr-scanner.min.js"></script>
+  <script>
+    const videoElem = document.getElementById("video");
+    const modal = document.getElementById("modal");
+    const scanResult = document.getElementById("scanResult");
+    const closeBtn = document.getElementById("closeBtn");
 
-let html5QrCode;
-let currentCameraId = null;
-let cameras = [];
-let flashOn = false;
+    async function startScanner() {
+      try {
+        const constraints = {
+          video: {
+            facingMode: "environment",
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
+        };
 
-const statusEl = document.getElementById("status");
-const switchBtn = document.getElementById("switchBtn");
-const flashBtn = document.getElementById("flashBtn");
-const stopBtn = document.getElementById("stopBtn");
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        videoElem.srcObject = stream;
 
-function setStatus(msg, type="info"){
-  statusEl.textContent = msg;
-  statusEl.className = `status ${type}`;
-}
+        // Torch otomatis jika tersedia
+        const track = stream.getVideoTracks()[0];
+        const capabilities = track.getCapabilities();
+        if (capabilities.torch) {
+          track.applyConstraints({ advanced: [{ torch: true }] });
+        }
 
-async function verifyTicket(code) {
-  setStatus("Memverifikasi...", "info");
-  try {
-    const resp = await fetch(VERIFY_URL + "?ticket=" + encodeURIComponent(code) + "&token=" + API_TOKEN);
-    const json = await resp.json();
-    if (json.ok && json.status === "ok") {
-      setStatus("✅ Tiket VALID - " + (json.name||""), "ok");
-      playBeep(1000);
-    } else if (json.ok && json.status === "used") {
-      setStatus("⚠️ Tiket SUDAH dipakai - " + (json.name||""), "error");
-      playBeep(600);
-    } else {
-      setStatus("❌ Tiket TIDAK valid", "error");
-      playBeep(300);
-    }
-  } catch (e) {
-    setStatus("Gagal koneksi", "error");
-  }
-}
-
-function playBeep(freq=1000) {
-  const ctx = new (window.AudioContext||window.webkitAudioContext)();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type="sine"; osc.frequency.value=freq;
-  osc.connect(gain); gain.connect(ctx.destination);
-  gain.gain.setValueAtTime(0.2, ctx.currentTime);
-  osc.start(); osc.stop(ctx.currentTime+0.2);
-}
-
-async function startCamera(cameraId){
-  if(html5QrCode){
-    await html5QrCode.stop().catch(()=>{});
-    document.getElementById("reader").innerHTML="";
-  }
-  html5QrCode = new Html5Qrcode("reader");
-  currentCameraId = cameraId;
-
-  html5QrCode.start(
-    cameraId,
-    { fps:15, qrbox:{width:250, height:250} },
-    qrCodeMessage => {
-      if (qrCodeMessage) {
-        html5QrCode.pause(true);
-        verifyTicket(qrCodeMessage).finally(()=>{
-          setTimeout(()=>html5QrCode.resume(),1200);
+        const qrScanner = new QrScanner(videoElem, result => {
+          showModal(result.data);
+          qrScanner.stop(); // hentikan scan setelah sukses
+        }, {
+          highlightScanRegion: true,
+          highlightCodeOutline: true
         });
+
+        qrScanner.start();
+      } catch (err) {
+        alert("❌ Tidak bisa akses kamera: " + err);
       }
-    },
-    errorMessage => {}
-  ).then(() => {
-    setStatus("Kamera aktif", "info");
-  }).catch(err => {
-    setStatus("Gagal buka kamera: " + err, "error");
-  });
-}
-
-async function init(){
-  try {
-    cameras = await Html5Qrcode.getCameras();
-    if(cameras.length===0){ setStatus("Tidak ada kamera", "error"); return; }
-    // default: kamera belakang jika ada
-    let cam = cameras[0].id;
-    for (let c of cameras) {
-      if(/back|rear/i.test(c.label)) { cam = c.id; break; }
     }
-    startCamera(cam);
-  } catch(e){
-    setStatus("Error akses kamera: "+e, "error");
-  }
-}
 
-switchBtn.onclick = ()=>{
-  if(cameras.length<2){ setStatus("Hanya ada 1 kamera", "info"); return; }
-  const idx = cameras.findIndex(c=>c.id===currentCameraId);
-  const next = cameras[(idx+1)%cameras.length];
-  startCamera(next.id);
-};
-
-flashBtn.onclick = async ()=>{
-  if(!html5QrCode) return;
-  try {
-    const capabilities = await html5QrCode.getRunningTrackCapabilities();
-    if(capabilities.torch){
-      flashOn = !flashOn;
-      await html5QrCode.applyVideoConstraints({ advanced: [{torch: flashOn}] });
-      flashBtn.textContent = flashOn ? "💡 Flash ON" : "💡 Flash OFF";
-    } else {
-      setStatus("Flash tidak didukung", "info");
+    function showModal(data) {
+      // Jika hasil berupa URL, jadikan link
+      if (data.startsWith("http://") || data.startsWith("https://")) {
+        scanResult.innerHTML = `<a href="${data}" target="_blank">${data}</a>`;
+      } else {
+        scanResult.textContent = data;
+      }
+      modal.style.display = "flex";
     }
-  } catch(e){
-    setStatus("Tidak bisa toggle flash", "error");
-  }
-};
 
-stopBtn.onclick = async ()=>{
-  if(html5QrCode){
-    await html5QrCode.stop();
-    document.getElementById("reader").innerHTML="";
-    setStatus("Scanner berhenti", "info");
-  }
-};
+    closeBtn.addEventListener("click", () => {
+      modal.style.display = "none";
+      // restart scanner lagi setelah modal ditutup
+      startScanner();
+    });
 
-init();
-</script>
+    startScanner();
+  </script>
 </body>
 </html>
