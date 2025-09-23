@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Ticket Scanner</title>
+    <meta name="description" content="Professional event ticket scanning solution">
+    <meta name="theme-color" content="#0d6efd">
+    <link rel="manifest" href="manifest.json">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --primary-hover: #0b5ed7;
+            --success-color: #198754;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --dark-color: #212529;
+            --light-color: #f8f9fa;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+        body {
+            background-color: #f8f9fa;
+        }
+        /* Loading spinner */
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s ease-in-out infinite;
+            display: none;
+            margin: 1rem auto;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .scanner-container {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 1.5rem;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        #preview {
+            width: 100%;
+            height: 300px;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            background-color: #f8f9fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        #preview video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .scanner-placeholder {
+            text-align: center;
+            color: #6c757d;
+            padding: 2rem;
+        }
+        .scanner-placeholder i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            color: #6c757d;
+        }
+        .result-container {
+            display: none;
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .btn-scan {
+            background-color: #0d6efd;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-scan:hover {
+            background-color: #0b5ed7;
+            transform: translateY(-2px);
+        }
+        .btn-scan:active {
+            transform: translateY(0);
+        }
+        .scanner-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            color: #333;
+        }
+        .scanner-header h2 {
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .scanner-header p {
+            color: #6c757d;
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="scanner-container">
+            <div class="scanner-header">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h2 class="mb-1"><i class="fas fa-ticket-alt me-2"></i>Ticket Scanner</h2>
+                        <p class="mb-0">Scan event tickets to validate</p>
+                    </div>
+                    <div class="event-stats d-none d-md-block">
+                        <div class="d-flex gap-3">
+                            <div class="text-center">
+                                <div class="fs-5 fw-bold" id="totalTickets">0</div>
+                                <small class="text-muted">Total</small>
+                            </div>
+                            <div class="text-center">
+                                <div class="fs-5 fw-bold text-success" id="checkedInTickets">0</div>
+                                <small class="text-muted">Checked In</small>
+                            </div>
+                            <div class="text-center">
+                                <div class="fs-5 fw-bold text-primary" id="checkInRate">0%</div>
+                                <small class="text-muted">Rate</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="alert alert-info py-2 px-3 small d-flex align-items-center" id="connectionStatus">
+                    <i class="fas fa-circle-notch fa-spin me-2"></i>
+                    <span>Connecting to server...</span>
+                </div>
+            </div>
+            
+            <div id="preview">
+                <div class="scanner-placeholder">
+                    <i class="fas fa-qrcode"></i>
+                    <p>Camera feed will appear here</p>
+                </div>
+            </div>
+            
+            <div class="d-grid gap-2">
+                <button id="startButton" class="btn btn-scan">
+                    <i class="fas fa-camera me-2"></i>Start Scanner
+                </button>
+                <button id="stopButton" class="btn btn-outline-secondary" disabled>
+                    <i class="fas fa-stop me-2"></i>Stop Scanner
+                </button>
+                <button id="manualEntryBtn" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#manualEntryModal">
+                    <i class="fas fa-keyboard me-2"></i>Manual Entry
+                </button>
+            </div>
+            
+            <div id="result" class="result-container">
+                <h5 id="resultTitle" class="mb-2"></h5>
+                <p id="resultMessage" class="mb-0"></p>
+                <div id="ticketDetails" class="mt-3 text-start"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add SweetAlert2 for better alerts -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Manual Entry Modal -->
+    <div class="modal fade" id="manualEntryModal" tabindex="-1" aria-labelledby="manualEntryModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="manualEntryModalLabel">Manual Ticket Entry</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="ticketIdInput" class="form-label">Ticket ID</label>
+                        <input type="text" class="form-control" id="ticketIdInput" placeholder="Enter ticket ID" autofocus>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="submitManualEntry">Validate</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- App Configuration -->
+    <script>
+        // Configuration - Update these values
+        const CONFIG = {
+            // Replace with your Google Apps Script Web App URL after deploying
+            API_BASE_URL: 'YOUR_GOOGLE_APPS_SCRIPT_URL',
+            
+            // Sound effects (using free sounds from a CDN)
+            SOUNDS: {
+                success: 'https://assets.mixkit.co/sfx/preview/mixkit-correct-answer-tone-2870.mp3',
+                error: 'https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3',
+                scan: 'https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3'
+            },
+            
+            // Auto-refresh stats interval in seconds
+            STATS_REFRESH_INTERVAL: 30
+        };
+        
+        // Audio elements for sound effects
+        const audioElements = {};
+        
+        // Preload sounds
+        Object.entries(CONFIG.SOUNDS).forEach(([key, url]) => {
+            audioElements[key] = new Audio(url);
+        });
+    </script>
+    
+    <!-- Main Application Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Initialize components
+            const codeReader = new ZXing.BrowserQRCodeReader();
+            const manualEntryModal = new bootstrap.Modal(document.getElementById('manualEntryModal'));
+            
+            // DOM Elements
+            const elements = {
+                startButton: document.getElementById('startButton'),
+                stopButton: document.getElementById('stopButton'),
+                preview: document.getElementById('preview'),
+                resultContainer: document.getElementById('result'),
+                resultTitle: document.getElementById('resultTitle'),
+                resultMessage: document.getElementById('resultMessage'),
+                ticketDetails: document.getElementById('ticketDetails'),
+                connectionStatus: document.getElementById('connectionStatus'),
+                manualEntryBtn: document.getElementById('manualEntryBtn'),
+                manualEntryInput: document.getElementById('ticketIdInput'),
+                submitManualEntry: document.getElementById('submitManualEntry'),
+                totalTickets: document.getElementById('totalTickets'),
+                checkedInTickets: document.getElementById('checkedInTickets'),
+                checkInRate: document.getElementById('checkInRate'),
+                spinner: document.createElement('div')
+            };
+            
+            // Add spinner to DOM
+            elements.spinner.className = 'spinner';
+            elements.preview.parentNode.insertBefore(elements.spinner, elements.preview.nextSibling);
+            
+            // State
+            let state = {
+                scannerActive: false,
+                videoElement: null,
+                stream: null,
+                statsInterval: null
+            };
+            
+            // Initialize the app
+            initApp();
+            
+            // Event Listeners
+            elements.startButton.addEventListener('click', startScanner);
+            elements.stopButton.addEventListener('click', stopScanner);
+            elements.submitManualEntry.addEventListener('click', handleManualEntry);
+            elements.manualEntryInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleManualEntry();
+            });
+            
+            // When manual entry modal is shown, focus the input
+            document.getElementById('manualEntryModal').addEventListener('shown.bs.modal', () => {
+                elements.manualEntryInput.focus();
+            });
+            
+            // When modal is hidden, clear the input
+            document.getElementById('manualEntryModal').addEventListener('hidden.bs.modal', () => {
+                elements.manualEntryInput.value = '';
+            });
+            
+            // Initialize the application
+            async function initApp() {
+                updateConnectionStatus('Connecting to server...', 'info');
+                
+                try {
+                    // Test the connection
+                    const stats = await fetchEventStats();
+                    updateStats(stats);
+                    updateConnectionStatus('Connected to server', 'success');
+                    
+                    // Start auto-refreshing stats
+                    state.statsInterval = setInterval(fetchAndUpdateStats, CONFIG.STATS_REFRESH_INTERVAL * 1000);
+                    
+                    // Request camera permissions in advance
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ 
+                            video: { 
+                                facingMode: 'environment',
+                                width: { ideal: 1280 },
+                                height: { ideal: 720 }
+                            } 
+                        });
+                        // Immediately stop the stream, we just wanted to request permission
+                        stream.getTracks().forEach(track => track.stop());
+                    } catch (error) {
+                        console.warn('Camera permission not granted yet:', error);
+                    }
+                } catch (error) {
+                    console.error('Failed to initialize app:', error);
+                    updateConnectionStatus('Offline mode - changes will be synced when online', 'warning');
+                    
+                    // Show offline warning
+                    showAlert(
+                        'Offline Mode',
+                        'Unable to connect to the server. You can still scan tickets, but they will be stored locally and synced when you are back online.',
+                        'warning'
+                    );
+                }
+            }
+            // State is managed in the state object
+            
+            // Local storage for offline functionality
+            const storage = {
+                getOfflineTickets: () => {
+                    const tickets = localStorage.getItem('offlineTickets');
+                    return tickets ? JSON.parse(tickets) : [];
+                },
+                
+                addOfflineTicket: (ticketId) => {
+                    const tickets = storage.getOfflineTickets();
+                    if (!tickets.includes(ticketId)) {
+                        tickets.push(ticketId);
+                        localStorage.setItem('offlineTickets', JSON.stringify(tickets));
+                    }
+                },
+                
+                clearOfflineTickets: () => {
+                    localStorage.removeItem('offlineTickets');
+                }
+            };
+            
+            // Start the scanner
+            async function startScanner() {
+                try {
+                    // Reset UI
+                    elements.preview.innerHTML = '';
+                    elements.resultContainer.style.display = 'none';
+                    
+                    // Define camera constraints with fallbacks
+                    const constraints = [
+                        // Try back camera with HD resolution first
+                        {
+                            video: { 
+                                facingMode: 'environment',
+                                width: { ideal: 1280 },
+                                height: { ideal: 720 },
+                                frameRate: { ideal: 30 }
+                            }
+                        },
+                        // Try front camera if back camera fails
+                        {
+                            video: { 
+                                facingMode: 'user',
+                                width: { ideal: 1280 },
+                                height: { ideal: 720 },
+                                frameRate: { ideal: 30 }
+                            }
+                        },
+                        // Try with just facing mode
+                        {
+                            video: { 
+                                facingMode: { ideal: 'environment' }
+                            }
+                        },
+                        // Most basic constraints as last resort
+                        {
+                            video: true
+                        }
+                    ];
+                    
+                    // Try each constraint set until one works
+                    let lastError;
+                    for (const constraint of constraints) {
+                        try {
+                            state.stream = await navigator.mediaDevices.getUserMedia(constraint);
+                            break; // Exit loop if successful
+                        } catch (err) {
+                            lastError = err;
+                            console.warn('Camera constraint failed, trying next one:', constraint, err);
+                            continue;
+                        }
+                    }
+                    
+                    if (!state.stream) {
+                        throw lastError || new Error('Could not access any camera');
+                    }
+                    
+                    // Create video element
+                    state.videoElement = document.createElement('video');
+                    state.videoElement.setAttribute('playsinline', ''); // For iOS
+                    state.videoElement.setAttribute('autoplay', '');
+                    state.videoElement.setAttribute('muted', '');
+                    elements.preview.appendChild(state.videoElement);
+                    
+                    // Start video stream
+                    state.videoElement.srcObject = state.stream;
+                    
+                    // Wait for video to be ready
+                    await new Promise((resolve, reject) => {
+                        const timer = setTimeout(() => {
+                            reject(new Error('Camera feed took too long to load'));
+                        }, 5000);
+                        
+                        state.videoElement.onloadedmetadata = () => {
+                            clearTimeout(timer);
+                            state.videoElement.play().then(resolve).catch(reject);
+                        };
+                        
+                        state.videoElement.onerror = (e) => {
+                            clearTimeout(timer);
+                            reject(new Error('Error playing video stream'));
+                        };
+                    });
+                    
+                    // Start QR code scanning
+                    codeReader = new ZXing.BrowserQRCodeReader();
+                    codeReader.decodeFromVideoElement(state.videoElement, (result, error) => {
+                        if (result && !state.scannerActive) {
+                            state.scannerActive = true;
+                            validateTicket(result.text);
+                        }
+                        
+                        if (error) {
+                            // Ignore common errors that occur during normal operation
+                            if (error.name !== 'NotFoundException' && 
+                                error.name !== 'NotAllowedError' && 
+                                error.name !== 'NotReadableError' &&
+                                error.name !== 'OverconstrainedError' &&
+                                error.name !== 'StreamApiNotCallableError') {
+                                console.error('QR Code error:', error);
+                            }
+                            return;
+                        }
+                    });
+                    
+                    // Update UI
+                    elements.startButton.disabled = true;
+                    elements.stopButton.disabled = false;
+                    
+                } catch (error) {
+                    console.error('Error accessing camera:', error);
+                    showResult('Error', 'Could not access the camera. Please ensure you have granted camera permissions.', false);
+                }
+            }
+            
+            // Stop the scanner
+            function stopScanner() {
+                if (state.videoElement && state.videoElement.srcObject) {
+                    const tracks = state.videoElement.srcObject.getTracks();
+                    tracks.forEach(track => track.stop());
+                    elements.preview.innerHTML = `
+                        <div class="scanner-placeholder">
+                            <i class="fas fa-camera"></i>
+                            <p>Camera is off</p>
+                        </div>
+                    `;
+                }
+                
+                // Reset state
+                codeReader.reset();
+                state.scannerActive = false;
+                state.stream = null;
+                elements.startButton.disabled = false;
+                elements.stopButton.disabled = true;
+                elements.resultContainer.style.display = 'none';
+            }
+            
+            // Validate a ticket by ID
+            async function validateTicket(ticketId) {
+                if (!ticketId || typeof ticketId !== 'string') {
+                    showResult('Error', 'Invalid ticket ID', false);
+                    return;
+                }
+                
+                // Trim and clean the ticket ID
+                ticketId = ticketId.trim().toUpperCase();
+                
+                // Show loading state
+                showLoading(true);
+                
+                try {
+                    // Play scan sound
+                    playSound('scan');
+                    
+                    // Call the API to validate the ticket
+                    const response = await fetch(`${CONFIG.API_BASE_URL}?action=validateTicket&ticketId=${encodeURIComponent(ticketId)}`);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    
+                    if (result.error) {
+                        // Handle API errors
+                        showResult('Error', result.error, false);
+                        playSound('error');
+                    } else if (result.isValid) {
+                        // Ticket is valid, proceed to check-in
+                        await checkInTicket(ticketId, result);
+                    } else {
+                        // Ticket is invalid
+                        showResult('Invalid Ticket', 'This ticket is not valid or has already been used.', false, null, true);
+                        playSound('error');
+                    }
+                } catch (error) {
+                    console.error('Error validating ticket:', error);
+                    
+                    // If offline, add to offline queue
+                    if (error.message.includes('Failed to fetch')) {
+                        storage.addOfflineTicket(ticketId);
+                        showResult(
+                            'Offline Mode', 
+                            'Ticket will be checked in when back online.', 
+                            'warning',
+                            { ticketId, status: 'Pending Sync' },
+                            false
+                        );
+                        playSound('success');
+                    } else {
+                        showResult('Error', 'Failed to validate ticket. Please try again.', false);
+                        playSound('error');
+                    }
+                } finally {
+                    showLoading(false);
+                }
+            }
+            
+            // Check in a ticket
+            async function checkInTicket(ticketId, ticketData) {
+                try {
+                    const response = await fetch(`${CONFIG.API_BASE_URL}?action=checkInTicket&ticketId=${encodeURIComponent(ticketId)}`, {
+                        method: 'POST'
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    
+                    if (result.error) {
+                        if (result.alreadyCheckedIn) {
+                            showResult(
+                                'Already Checked In',
+                                `This ticket was already checked in at ${new Date(result.checkInTime).toLocaleString()}`,
+                                'warning',
+                                ticketData,
+                                true
+                            );
+                            playSound('warning');
+                        } else {
+                            throw new Error(result.error);
+                        }
+                    } else {
+                        // Successfully checked in
+                        showResult(
+                            'Check-in Successful',
+                            `Ticket checked in at ${new Date().toLocaleTimeString()}`,
+                            true,
+                            { ...ticketData, status: 'Checked In' },
+                            true
+                        );
+                        playSound('success');
+                        
+                        // Update stats
+                        fetchAndUpdateStats();
+                    }
+                } catch (error) {
+                    console.error('Error checking in ticket:', error);
+                    showResult('Error', 'Failed to check in ticket. Please try again.', false);
+                    playSound('error');
+                }
+            }
+            
+            // Show validation result
+            function showResult(title, message, isValid, ticketData = null, autoDismiss = false) {
+                // Update result container
+                elements.resultContainer.className = `result-container ${isValid === true ? 'success' : isValid === 'warning' ? 'warning' : 'error'}`;
+                elements.resultTitle.textContent = title;
+                elements.resultMessage.textContent = message;
+                
+                // Update ticket details if provided
+                if (ticketData) {
+                    elements.ticketDetails.innerHTML = `
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-subtitle mb-2 text-muted">Ticket Details</h6>
+                                ${ticketData.name ? `<p class="card-text"><strong>Name:</strong> ${ticketData.name}</p>` : ''}
+                                ${ticketData.type ? `<p class="card-text"><strong>Type:</strong> ${ticketData.type}</p>` : ''}
+                                ${ticketData.event ? `<p class="card-text"><strong>Event:</strong> ${ticketData.event}</p>` : ''}
+                                ${ticketData.date ? `<p class="card-text"><strong>Date:</strong> ${ticketData.date}</p>` : ''}
+                                ${ticketData.status ? `<p class="card-text"><strong>Status:</strong> ${ticketData.status}</p>` : ''}
+                                ${ticketData.ticketId ? `<p class="card-text"><small class="text-muted">ID: ${ticketData.ticketId}</small></p>` : ''}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    elements.ticketDetails.innerHTML = '';
+                }
+                
+                // Show the result container
+                elements.resultContainer.style.display = 'block';
+                
+                // Auto-dismiss after delay if enabled
+                if (autoDismiss) {
+                    setTimeout(() => {
+                        elements.resultContainer.style.display = 'none';
+                        state.scannerActive = false;
+                    }, 3000);
+                }
+                
+                // Scroll to result
+                elements.resultContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+            
+            // Handle manual ticket entry
+            async function handleManualEntry() {
+                const ticketId = elements.manualEntryInput.value.trim();
+                
+                if (!ticketId) {
+                    showAlert('Error', 'Please enter a ticket ID', 'error');
+                    return;
+                }
+                
+                // Close the modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('manualEntryModal'));
+                modal.hide();
+                
+                // Process the ticket
+                await validateTicket(ticketId);
+            }
+            
+            // Fetch event statistics
+            async function fetchEventStats() {
+                try {
+                    const response = await fetch(`${CONFIG.API_BASE_URL}?action=getEventStats`);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    return await response.json();
+                } catch (error) {
+                    console.error('Error fetching event stats:', error);
+                    return null;
+                }
+            }
+            
+            // Fetch and update stats
+            async function fetchAndUpdateStats() {
+                try {
+                    const stats = await fetchEventStats();
+                    if (stats) {
+                        updateStats(stats);
+                    }
+                } catch (error) {
+                    console.error('Error updating stats:', error);
+                }
+            }
+            
+            // Update stats display
+            function updateStats(stats) {
+                if (!stats) return;
+                
+                elements.totalTickets.textContent = stats.totalTickets || 0;
+                elements.checkedInTickets.textContent = stats.checkedIn || 0;
+                elements.checkInRate.textContent = stats.checkInRate ? `${Math.round(stats.checkInRate)}%` : '0%';
+            }
+            
+            // Update connection status
+            function updateConnectionStatus(message, type = 'info') {
+                const iconMap = {
+                    'info': 'info-circle',
+                    'success': 'check-circle',
+                    'warning': 'exclamation-triangle',
+                    'error': 'times-circle'
+                };
+                
+                const icon = iconMap[type] || 'info-circle';
+                elements.connectionStatus.innerHTML = `
+                    <i class="fas fa-${icon} me-2"></i>
+                    <span>${message}</span>
+                `;
+                elements.connectionStatus.className = `alert alert-${type} py-2 px-3 small d-flex align-items-center`;
+            }
+            
+            // Show loading state
+            function showLoading(show) {
+                elements.spinner.style.display = show ? 'block' : 'none';
+                
+                if (show) {
+                    elements.startButton.disabled = true;
+                    elements.stopButton.disabled = true;
+                } else {
+                    elements.startButton.disabled = state.stream !== null;
+                    elements.stopButton.disabled = state.stream === null;
+                }
+            }
+            
+            // Play sound effect
+            function playSound(type) {
+                if (audioElements[type]) {
+                    // Clone the audio element to allow multiple plays
+                    const audio = audioElements[type].cloneNode();
+                    audio.volume = 0.5; // Reduce volume
+                    audio.play().catch(e => console.warn('Could not play sound:', e));
+                }
+            }
+            
+            // Show alert using SweetAlert2
+            function showAlert(title, text, icon = 'info') {
+                Swal.fire({
+                    title,
+                    text,
+                    icon,
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+            }
+            
+            // Handle offline tickets sync when coming back online
+            window.addEventListener('online', async () => {
+                const offlineTickets = storage.getOfflineTickets();
+                
+                if (offlineTickets.length > 0) {
+                    showAlert('Syncing offline tickets...', 'Please wait while we sync your offline data', 'info');
+                    
+                    // Process each offline ticket
+                    for (const ticketId of offlineTickets) {
+                        await validateTicket(ticketId);
+                        // Small delay between requests
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    }
+                    
+                    // Clear offline tickets after successful sync
+                    storage.clearOfflineTickets();
+                    showAlert('Sync Complete', 'All offline tickets have been synced', 'success');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
