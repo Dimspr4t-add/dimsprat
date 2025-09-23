@@ -76,12 +76,14 @@
     </div>
   </div>
 
+  <!-- Library qr-scanner -->
   <script src="https://unpkg.com/qr-scanner/qr-scanner.min.js"></script>
   <script>
     const videoElem = document.getElementById("video");
     const modal = document.getElementById("modal");
     const scanResult = document.getElementById("scanResult");
     const closeBtn = document.getElementById("closeBtn");
+    let qrScanner;
 
     async function startScanner() {
       try {
@@ -96,14 +98,7 @@
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
         videoElem.srcObject = stream;
 
-        // Torch otomatis jika tersedia
-        const track = stream.getVideoTracks()[0];
-        const capabilities = track.getCapabilities();
-        if (capabilities.torch) {
-          track.applyConstraints({ advanced: [{ torch: true }] });
-        }
-
-        const qrScanner = new QrScanner(videoElem, result => {
+        qrScanner = new QrScanner(videoElem, result => {
           showModal(result.data);
           qrScanner.stop(); // hentikan scan setelah sukses
         }, {
@@ -118,7 +113,6 @@
     }
 
     function showModal(data) {
-      // Jika hasil berupa URL, jadikan link
       if (data.startsWith("http://") || data.startsWith("https://")) {
         scanResult.innerHTML = `<a href="${data}" target="_blank">${data}</a>`;
       } else {
@@ -129,8 +123,7 @@
 
     closeBtn.addEventListener("click", () => {
       modal.style.display = "none";
-      // restart scanner lagi setelah modal ditutup
-      startScanner();
+      startScanner(); // restart scan
     });
 
     startScanner();
