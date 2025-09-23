@@ -1,899 +1,98 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Event Scanner</title>
-
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <!-- SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-    <!-- ZXing Library for QR Code Scanning -->
-    <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
-
-    <style>
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        .scanner-container {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            overflow: hidden;
-        }
-
-        .scanner-header {
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            color: white;
-            padding: 2rem;
-            text-align: center;
-        }
-
-        .scanner-header h1 {
-            margin: 0;
-            font-size: 2.5rem;
-            font-weight: 700;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-        }
-
-        .camera-container {
-            position: relative;
-            background: #000;
-            border-radius: 15px;
-            overflow: hidden;
-            margin: 2rem;
-        }
-
-        .camera-container video {
-            width: 100%;
-            height: auto;
-            border-radius: 15px;
-        }
-
-        .camera-overlay {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 200px;
-            height: 200px;
-            border: 3px solid #4f46e5;
-            border-radius: 50%;
-            box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.5);
-        }
-
-        .camera-overlay::before {
-            content: '';
-            position: absolute;
-            top: -10px;
-            left: -10px;
-            right: -10px;
-            bottom: -10px;
-            border: 2px solid rgba(79, 70, 229, 0.3);
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.1); opacity: 0.7; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        .control-buttons {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            padding: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .btn-custom {
-            padding: 1rem 2rem;
-            border-radius: 50px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.3s ease;
-            border: none;
-            min-width: 150px;
-        }
-
-        .btn-start {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-        }
-
-        .btn-start:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
-        }
-
-        .btn-stop {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            color: white;
-            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
-        }
-
-        .btn-stop:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
-        }
-
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .result-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            width: 400px;
-            max-width: calc(100vw - 40px);
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            z-index: 1000;
-            display: none;
-        }
-
-        .result-header {
-            padding: 1rem;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-            font-weight: 600;
-        }
-
-        .result-body {
-            padding: 1rem;
-        }
-
-        .status-indicator {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            padding: 1rem;
-            border-radius: 10px;
-            font-weight: 600;
-            z-index: 1000;
-        }
-
-        .status-success {
-            background: rgba(16, 185, 129, 0.9);
-            color: white;
-        }
-
-        .status-error {
-            background: rgba(239, 68, 68, 0.9);
-            color: white;
-        }
-
-        .status-info {
-            background: rgba(59, 130, 246, 0.9);
-            color: white;
-        }
-
-        .spinner {
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top: 4px solid #4f46e5;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .loading-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10;
-        }
-
-        .stats-container {
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 15px;
-            padding: 1.5rem;
-            margin: 1rem;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-
-        .stat-card {
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-            border-radius: 10px;
-            padding: 1rem;
-            text-align: center;
-            border-left: 4px solid #4f46e5;
-        }
-
-        .stat-number {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #4f46e5;
-        }
-
-        .stat-label {
-            font-size: 0.875rem;
-            color: #64748b;
-            margin-top: 0.5rem;
-        }
-
-        .connection-status {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .connection-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-        }
-
-        .dot-online {
-            background: #10b981;
-            animation: pulse 2s infinite;
-        }
-
-        .dot-offline {
-            background: #ef4444;
-        }
-
-        @media (max-width: 768px) {
-            .scanner-header h1 {
-                font-size: 2rem;
-            }
-
-            .camera-container {
-                margin: 1rem;
-            }
-
-            .control-buttons {
-                padding: 1rem;
-            }
-
-            .result-container {
-                width: calc(100vw - 40px);
-                right: 20px;
-                left: 20px;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scanner Tiket Check-in</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Rajdhani', sans-serif;
+      background: #0d0d0d;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      margin-bottom: 10px;
+      color: #00ffcc;
+    }
+    #reader {
+      width: 100%;
+      max-width: 400px;
+      border: 3px solid #00ffcc;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    #status {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 8px;
+      font-size: 1.2rem;
+      text-align: center;
+      font-weight: bold;
+    }
+    .valid {
+      background: #0a0;
+    }
+    .invalid {
+      background: #a00;
+    }
+  </style>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
 <body>
-    <div class="container-fluid p-4">
-        <div class="row justify-content-center">
-            <div class="col-12 col-lg-10 col-xl-8">
-                <div class="scanner-container">
-                    <div class="scanner-header">
-                        <h1><i class="fas fa-qrcode me-3"></i>Event Scanner</h1>
-                        <p class="mb-0 mt-2">Scan QR codes to validate tickets</p>
-                    </div>
+  <h1>📷 Scanner Tiket</h1>
+  <div id="reader"></div>
+  <div id="status">Arahkan kamera ke QR Code tiket</div>
 
-                    <div class="camera-container">
-                        <div id="preview"></div>
-                        <div class="camera-overlay"></div>
-                        <div class="loading-overlay" id="loadingOverlay" style="display: none;">
-                            <div class="spinner"></div>
-                        </div>
-                    </div>
+  <script>
+    // === KONFIGURASI ===
+    const SHEET_API = "https://script.google.com/macros/s/AKfycbxxxxxxxxxxxxxxxxxxxx/exec"; 
+    // Ganti dengan URL Web App Google Apps Script kamu
 
-                    <div class="control-buttons">
-                        <button id="startButton" class="btn btn-custom btn-start" onclick="startScanner()">
-                            <i class="fas fa-play me-2"></i>Start Scanner
-                        </button>
-                        <button id="stopButton" class="btn btn-custom btn-stop" onclick="stopScanner()" disabled>
-                            <i class="fas fa-stop me-2"></i>Stop Scanner
-                        </button>
-                    </div>
+    function updateStatus(message, isValid) {
+      const statusDiv = document.getElementById("status");
+      statusDiv.textContent = message;
+      statusDiv.className = isValid ? "valid" : "invalid";
+    }
 
-                    <div class="stats-container">
-                        <h5><i class="fas fa-chart-bar me-2"></i>Event Statistics</h5>
-                        <div class="connection-status mb-3">
-                            <div class="connection-dot dot-offline" id="connectionDot"></div>
-                            <span id="connectionStatus">Offline</span>
-                        </div>
-                        <div class="stats-grid">
-                            <div class="stat-card">
-                                <div class="stat-number" id="totalTickets">0</div>
-                                <div class="stat-label">Total Tickets</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-number" id="checkedInTickets">0</div>
-                                <div class="stat-label">Checked In</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-number" id="remainingTickets">0</div>
-                                <div class="stat-label">Remaining</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    async function checkTicket(code) {
+      try {
+        const response = await fetch(`${SHEET_API}?code=${encodeURIComponent(code)}`);
+        const data = await response.json();
 
-    <!-- Result Container -->
-    <div class="result-container" id="resultContainer">
-        <div class="result-header">
-            <i class="fas fa-ticket-alt me-2"></i>Ticket Validation Result
-        </div>
-        <div class="result-body" id="resultBody">
-            <!-- Result content will be inserted here -->
-        </div>
-    </div>
-
-    <!-- Status Indicator -->
-    <div class="status-indicator" id="statusIndicator" style="display: none;"></div>
-
-    <script>
-        // Configuration - Update these values
-        const CONFIG = {
-            // Replace with your Google Apps Script Web App URL after deploying
-            API_BASE_URL: 'YOUR_GOOGLE_APPS_SCRIPT_URL',
-
-            // Scanner settings
-            SCAN_INTERVAL: 1000, // milliseconds between scans
-            MAX_RETRIES: 3,
-            RETRY_DELAY: 2000
-        };
-
-        // DOM Elements
-        const elements = {
-            preview: document.getElementById('preview'),
-            startButton: document.getElementById('startButton'),
-            stopButton: document.getElementById('stopButton'),
-            resultContainer: document.getElementById('resultContainer'),
-            resultBody: document.getElementById('resultBody'),
-            loadingOverlay: document.getElementById('loadingOverlay'),
-            connectionDot: document.getElementById('connectionDot'),
-            connectionStatus: document.getElementById('connectionStatus'),
-            totalTickets: document.getElementById('totalTickets'),
-            checkedInTickets: document.getElementById('checkedInTickets'),
-            remainingTickets: document.getElementById('remainingTickets'),
-            statusIndicator: document.getElementById('statusIndicator')
-        };
-
-        // Application State
-        const state = {
-            stream: null,
-            videoElement: null,
-            codeReader: null,
-            scanning: false,
-            scannerActive: false,
-            retryCount: 0
-        };
-
-        // Initialize the application
-        function initApp() {
-            console.log('Initializing Event Scanner...');
-
-            // Set up event listeners
-            setupEventListeners();
-
-            // Initialize stats
-            updateStats({ total: 0, checkedIn: 0 });
-
-            // Update connection status
-            updateConnectionStatus('Ready to scan', 'info');
+        if (data.valid) {
+          updateStatus(`✅ Tiket Valid!\nNama: ${data.nama}\nStatus: Sudah Check-in`, true);
+        } else {
+          updateStatus("❌ Tiket Tidak Ditemukan / Sudah Dipakai", false);
         }
-
-        // Set up event listeners
-        function setupEventListeners() {
-            // Handle page visibility changes
-            document.addEventListener('visibilitychange', () => {
-                if (document.hidden && state.scanning) {
-                    stopScanner();
-                }
-            });
-
-            // Handle online/offline events
-            window.addEventListener('online', () => {
-                updateConnectionStatus('Online', 'success');
-                fetchAndUpdateStats();
-            });
-
-            window.addEventListener('offline', () => {
-                updateConnectionStatus('Offline', 'error');
-            });
-        }
-
-        // Start the scanner
-        async function startScanner() {
-            try {
-                if (state.stream) {
-                    stopScanner();
-                }
-
-                showLoading(true);
-                elements.resultContainer.style.display = 'none';
-
-                // Define camera constraints with fallbacks for all devices
-                const constraints = [
-                    // Try back camera with HD resolution first
-                    {
-                        video: {
-                            facingMode: 'environment',
-                            width: { ideal: 1280, min: 640 },
-                            height: { ideal: 720, min: 480 },
-                            frameRate: { ideal: 30, min: 15 }
-                        }
-                    },
-                    // Try front camera if back camera fails
-                    {
-                        video: {
-                            facingMode: 'user',
-                            width: { ideal: 1280, min: 640 },
-                            height: { ideal: 720, min: 480 },
-                            frameRate: { ideal: 30, min: 15 }
-                        }
-                    },
-                    // Try with just facing mode
-                    {
-                        video: {
-                            facingMode: { ideal: 'environment' }
-                        }
-                    },
-                    // Most basic constraints as last resort
-                    {
-                        video: true
-                    }
-                ];
-
-                // Try each constraint set until one works
-                let lastError;
-                for (const constraint of constraints) {
-                    try {
-                        console.log('Trying camera constraint:', constraint);
-                        state.stream = await navigator.mediaDevices.getUserMedia(constraint);
-                        console.log('Camera constraint successful:', constraint);
-                        break; // Exit loop if successful
-                    } catch (err) {
-                        lastError = err;
-                        console.warn('Camera constraint failed, trying next one:', constraint, err.message);
-                        continue;
-                    }
-                }
-
-                if (!state.stream) {
-                    throw lastError || new Error('Could not access any camera');
-                }
-
-                // Create video element
-                state.videoElement = document.createElement('video');
-                state.videoElement.setAttribute('playsinline', ''); // For iOS
-                state.videoElement.setAttribute('autoplay', '');
-                state.videoElement.setAttribute('muted', '');
-                state.videoElement.style.width = '100%';
-                state.videoElement.style.height = 'auto';
-                state.videoElement.style.borderRadius = '15px';
-                elements.preview.appendChild(state.videoElement);
-
-                // Start video stream
-                state.videoElement.srcObject = state.stream;
-
-                // Wait for video to be ready
-                await new Promise((resolve, reject) => {
-                    const timer = setTimeout(() => {
-                        reject(new Error('Camera feed took too long to load'));
-                    }, 10000);
-
-                    state.videoElement.onloadedmetadata = () => {
-                        clearTimeout(timer);
-                        state.videoElement.play().then(resolve).catch(reject);
-                    };
-
-                    state.videoElement.onerror = (e) => {
-                        clearTimeout(timer);
-                        reject(new Error('Error playing video stream'));
-                    };
-                });
-
-                // Initialize ZXing properly
-                if (typeof ZXing !== 'undefined' && ZXing.BrowserQRCodeReader) {
-                    state.codeReader = new ZXing.BrowserQRCodeReader();
-                } else {
-                    throw new Error('ZXing library not loaded properly');
-                }
-
-                state.scanning = true;
-
-                // Start decoding
-                const controls = await state.codeReader.decodeFromVideoElement(
-                    state.videoElement,
-                    (result, error, controls) => {
-                        if (result && !state.scannerActive) {
-                            state.scannerActive = true;
-                            validateTicket(result.text);
-                        }
-
-                        if (error && !error.message.includes('No QR code found')) {
-                            console.error('QR Code Error:', error);
-                        }
-                    }
-                );
-
-                state.controls = controls;
-                updateConnectionStatus('Scanner started successfully', 'success');
-
-            } catch (error) {
-                console.error('Error accessing camera:', error);
-                let errorMessage = 'Could not access camera. ';
-
-                if (error.name === 'NotAllowedError') {
-                    errorMessage += 'Please check camera permissions and try again.';
-                } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
-                    errorMessage += 'No camera found on this device.';
-                } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
-                    errorMessage += 'Camera is already in use or not readable.';
-                } else if (error.name === 'OverconstrainedError' || error.name === 'ConstraintNotSatisfiedError') {
-                    errorMessage += 'Camera constraints could not be satisfied.';
-                } else {
-                    errorMessage += `Error: ${error.message || 'Unknown error occurred'}`;
-                }
-
-                showAlert('Camera Error', errorMessage, 'error');
-                updateConnectionStatus('Failed to access camera', 'error');
-            } finally {
-                showLoading(false);
-            }
-        }
-
-        // Stop the scanner
-        async function stopScanner() {
-            try {
-                if (state.controls) {
-                    await state.controls.stop();
-                }
-
-                if (state.stream) {
-                    state.stream.getTracks().forEach(track => track.stop());
-                    state.stream = null;
-                }
-
-                if (state.videoElement) {
-                    elements.preview.removeChild(state.videoElement);
-                    state.videoElement = null;
-                }
-
-                state.scanning = false;
-                state.scannerActive = false;
-                state.codeReader = null;
-
-                // Fix button states
-                elements.startButton.disabled = false;
-                elements.stopButton.disabled = true;
-
-                updateConnectionStatus('Scanner stopped', 'info');
-
-            } catch (error) {
-                console.error('Error stopping scanner:', error);
-            }
-        }
-
-        // Validate a ticket by ID
-        async function validateTicket(ticketId) {
-            try {
-                state.scannerActive = true;
-
-                // Show loading state
-                showResult('Validating Ticket', 'Please wait...', false, null, true);
-
-                // Make API call to validate ticket using POST for security
-                const response = await fetch(CONFIG.API_BASE_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        action: 'validateTicket',
-                        ticketId: ticketId
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const data = await response.json();
-
-                if (data.success) {
-                    // Play success sound
-                    playSound('success');
-
-                    // Show success result
-                    showResult('Ticket Valid!', data.message, true, data.ticketData);
-
-                    // Update stats
-                    fetchAndUpdateStats();
-
-                } else {
-                    // Play error sound
-                    playSound('error');
-
-                    // Show error result
-                    showResult('Invalid Ticket', data.message, false);
-                }
-
-            } catch (error) {
-                console.error('Error validating ticket:', error);
-
-                // Play error sound
-                playSound('error');
-
-                // Show error result
-                showResult('Validation Error', `Failed to validate ticket: ${error.message}`, false);
-
-            } finally {
-                // Re-enable scanning after a delay
-                setTimeout(() => {
-                    state.scannerActive = false;
-                }, 3000);
-            }
-        }
-
-        // Show validation result
-        function showResult(title, message, isValid, ticketData = null, autoDismiss = false) {
-            const resultBody = elements.resultBody;
-
-            let html = `
-                <div class="text-center">
-                    <div class="mb-3">
-                        <i class="fas ${isValid ? 'fa-check-circle text-success' : 'fa-times-circle text-danger'} fa-3x"></i>
-                    </div>
-                    <h5>${title}</h5>
-                    <p class="mb-3">${message}</p>
-            `;
-
-            if (ticketData) {
-                html += `
-                    <div class="ticket-info">
-                        <div class="row">
-                            <div class="col-6"><strong>Ticket ID:</strong></div>
-                            <div class="col-6">${ticketData.id}</div>
-                        </div>
-                        <div class="row">
-                            <div class="col-6"><strong>Event:</strong></div>
-                            <div class="col-6">${ticketData.eventName}</div>
-                        </div>
-                        <div class="row">
-                            <div class="col-6"><strong>Status:</strong></div>
-                            <div class="col-6">${ticketData.status}</div>
-                        </div>
-                    </div>
-                `;
-            }
-
-            html += `</div>`;
-
-            resultBody.innerHTML = html;
-            elements.resultContainer.style.display = 'block';
-
-            if (autoDismiss) {
-                setTimeout(() => {
-                    elements.resultContainer.style.display = 'none';
-                }, 2000);
-            }
-        }
-
-        // Fetch event statistics
-        async function fetchEventStats() {
-            try {
-                const response = await fetch(CONFIG.API_BASE_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        action: 'getStats'
-                    })
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    return data.success ? data.stats : null;
-                }
-            } catch (error) {
-                console.error('Error fetching stats:', error);
-            }
-            return null;
-        }
-
-        // Fetch and update stats
-        async function fetchAndUpdateStats() {
-            const stats = await fetchEventStats();
-            if (stats) {
-                updateStats(stats);
-            }
-        }
-
-        // Update stats display
-        function updateStats(stats) {
-            elements.totalTickets.textContent = stats.total || 0;
-            elements.checkedInTickets.textContent = stats.checkedIn || 0;
-            elements.remainingTickets.textContent = (stats.total - stats.checkedIn) || 0;
-        }
-
-        // Update connection status
-        function updateConnectionStatus(message, type = 'info') {
-            elements.connectionStatus.textContent = message;
-
-            // Update dot color
-            elements.connectionDot.className = 'connection-dot';
-            if (navigator.onLine) {
-                elements.connectionDot.classList.add('dot-online');
-            } else {
-                elements.connectionDot.classList.add('dot-offline');
-            }
-
-            // Show status indicator
-            elements.statusIndicator.textContent = message;
-            elements.statusIndicator.className = `status-indicator status-${type}`;
-            elements.statusIndicator.style.display = 'block';
-
-            setTimeout(() => {
-                elements.statusIndicator.style.display = 'none';
-            }, 3000);
-        }
-
-        // Show loading state
-        function showLoading(show) {
-            elements.loadingOverlay.style.display = show ? 'flex' : 'none';
-
-            if (show) {
-                elements.startButton.disabled = true;
-                elements.stopButton.disabled = true;
-            } else {
-                // Fix button states - when no stream, start should be enabled, stop disabled
-                elements.startButton.disabled = state.stream !== null;
-                elements.stopButton.disabled = state.stream === null;
-            }
-        }
-
-        // Play sound effect
-        function playSound(type) {
-            // Create audio context if it doesn't exist
-            if (!window.audioContext) {
-                try {
-                    window.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                } catch (error) {
-                    console.warn('Could not create audio context:', error);
-                    return;
-                }
-            }
-
-            const context = window.audioContext;
-            const oscillator = context.createOscillator();
-            const gainNode = context.createGain();
-
-            try {
-                oscillator.connect(gainNode);
-                gainNode.connect(context.destination);
-
-                // Configure sound based on type
-                if (type === 'success') {
-                    oscillator.frequency.setValueAtTime(800, context.currentTime);
-                    oscillator.frequency.setValueAtTime(1000, context.currentTime + 0.1);
-                    gainNode.gain.setValueAtTime(0.3, context.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.3);
-                    oscillator.start(context.currentTime);
-                    oscillator.stop(context.currentTime + 0.3);
-                } else {
-                    oscillator.frequency.setValueAtTime(300, context.currentTime);
-                    gainNode.gain.setValueAtTime(0.3, context.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.5);
-                    oscillator.start(context.currentTime);
-                    oscillator.stop(context.currentTime + 0.5);
-                }
-            } catch (error) {
-                console.warn('Could not play sound:', error);
-            }
-        }
-
-        // Show alert using SweetAlert2
-        function showAlert(title, text, icon = 'info') {
-            Swal.fire({
-                title,
-                text,
-                icon,
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 4000,
-                timerProgressBar: true
-            });
-        }
-
-        // Handle offline tickets sync when coming back online
-        window.addEventListener('online', async () => {
-            const offlineTickets = storage.getOfflineTickets();
-
-            if (offlineTickets.length > 0) {
-                showAlert('Syncing', 'Syncing offline tickets...', 'info');
-
-                for (const ticketId of offlineTickets) {
-                    try {
-                        await validateTicket(ticketId);
-                        // Small delay between requests
-                        await new Promise(resolve => setTimeout(resolve, 500));
-                    } catch (error) {
-                        console.error('Error syncing offline ticket:', ticketId, error);
-                    }
-                }
-
-                // Clear offline tickets after successful sync
-                storage.clearOfflineTickets();
-                showAlert('Sync Complete', 'All offline tickets have been synced', 'success');
-            }
-        });
-
-        // Local storage for offline functionality
-        const storage = {
-            getOfflineTickets: () => {
-                try {
-                    const tickets = localStorage.getItem('offlineTickets');
-                    return tickets ? JSON.parse(tickets) : [];
-                } catch (error) {
-                    console.error('Error getting offline tickets:', error);
-                    return [];
-                }
-            },
-
-            addOfflineTicket: (ticketId) => {
-                try {
-                    const tickets = storage.getOfflineTickets();
-                    if (!tickets.includes(ticketId)) {
-                        tickets.push(ticketId);
-                        localStorage.setItem('offlineTickets', JSON.stringify(tickets));
-                    }
-                } catch (error) {
-                    console.error('Error saving offline ticket:', error);
-                }
-            },
-
-            clearOfflineTickets: () => {
-                try {
-                    localStorage.removeItem('offlineTickets');
-                } catch (error) {
-                    console.error('Error clearing offline tickets:', error);
-                }
-            }
-        };
-
-        // Initialize the application
-        initApp();
-    </script>
+      } catch (err) {
+        updateStatus("⚠️ Gagal menghubungkan ke server", false);
+      }
+    }
+
+    function onScanSuccess(decodedText) {
+      checkTicket(decodedText);
+    }
+
+    function startScanner() {
+      const html5QrCode = new Html5Qrcode("reader");
+      html5QrCode.start(
+        { facingMode: "environment" }, 
+        { fps: 10, qrbox: 250 },
+        onScanSuccess
+      ).catch(err => {
+        updateStatus("⚠️ Kamera tidak bisa diakses", false);
+      });
+    }
+
+    window.onload = startScanner;
+  </script>
 </body>
 </html>
