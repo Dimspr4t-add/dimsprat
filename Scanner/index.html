@@ -37,11 +37,41 @@
       text-align: center;
       font-weight: bold;
     }
-    .valid {
-      background: #0a0;
+    .valid { background: #0a0; }
+    .invalid { background: #a00; }
+    .loading { background: #444; color: #ff0; }
+
+    /* === MODAL === */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(0,0,0,0.7);
+      justify-content: center;
+      align-items: center;
     }
-    .invalid {
-      background: #a00;
+    .modal-content {
+      background: #1a1a1a;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      max-width: 300px;
+      width: 80%;
+      color: #fff;
+      border: 2px solid #00ffcc;
+    }
+    .modal h2 { margin-bottom: 10px; color: #00ffcc; }
+    .close-btn {
+      margin-top: 15px;
+      padding: 8px 16px;
+      background: #00ffcc;
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
     }
   </style>
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
@@ -51,29 +81,40 @@
   <div id="reader"></div>
   <div id="status">Arahkan kamera ke QR Code tiket</div>
 
+  <!-- MODAL -->
+  <div id="successModal" class="modal">
+    <div class="modal-content">
+      <h2>✅ Tiket Valid</h2>
+      <p id="modalNama"></p>
+      <button class="close-btn" onclick="closeModal()">OK</button>
+    </div>
+  </div>
+
   <script>
     // === KONFIGURASI ===
     const SHEET_API = "https://script.google.com/macros/s/AKfycby_KZar7ssIv9wK5CRHUe0t-VoKmfgf-ihUHNvjIMH1O2R4zZWQeDDI_ETt2v54fGE/exec"; 
-    // Ganti dengan URL Web App Google Apps Script kamu
+    // Ganti dengan URL Web App GAS kamu
 
-    function updateStatus(message, isValid) {
+    function updateStatus(message, type) {
       const statusDiv = document.getElementById("status");
       statusDiv.textContent = message;
-      statusDiv.className = isValid ? "valid" : "invalid";
+      statusDiv.className = type;
     }
 
     async function checkTicket(code) {
+      updateStatus("⏳ Memproses...", "loading");
       try {
         const response = await fetch(`${SHEET_API}?code=${encodeURIComponent(code)}`);
         const data = await response.json();
 
         if (data.valid) {
-          updateStatus(`✅ Tiket Valid!\nNama: ${data.nama}\nStatus: Sudah Check-in`, true);
+          updateStatus("✅ Tiket Valid", "valid");
+          showModal(data.nama);
         } else {
-          updateStatus("❌ Tiket Tidak Ditemukan / Sudah Dipakai", false);
+          updateStatus(data.message || "❌ Tiket Tidak Ditemukan / Sudah Dipakai", "invalid");
         }
       } catch (err) {
-        updateStatus("⚠️ Gagal menghubungkan ke server", false);
+        updateStatus("⚠️ Gagal menghubungkan ke server", "invalid");
       }
     }
 
@@ -88,8 +129,16 @@
         { fps: 10, qrbox: 250 },
         onScanSuccess
       ).catch(err => {
-        updateStatus("⚠️ Kamera tidak bisa diakses", false);
+        updateStatus("⚠️ Kamera tidak bisa diakses", "invalid");
       });
+    }
+
+    function showModal(nama) {
+      document.getElementById("modalNama").textContent = "Nama: " + nama;
+      document.getElementById("successModal").style.display = "flex";
+    }
+    function closeModal() {
+      document.getElementById("successModal").style.display = "none";
     }
 
     window.onload = startScanner;
