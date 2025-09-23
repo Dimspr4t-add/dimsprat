@@ -1,123 +1,409 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tiket Scanner - DIMSPRAT</title>
-  <style>
-    body, html {
-      margin: 0; padding: 0; height: 100%;
-      background: black; overflow: hidden;
-      font-family: "Rajdhani", sans-serif;
-    }
-    #reader { width: 100vw; height: 100vh; }
-    /* Modal */
-    .modal {
-      display: none; position: fixed; z-index: 999;
-      left: 0; top: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.85);
-      justify-content: center; align-items: center;
-    }
-    .modal-content {
-      background: white; padding: 25px 30px;
-      border-radius: 14px; text-align: center;
-      max-width: 90%; box-shadow: 0 6px 18px rgba(0,0,0,0.4);
-    }
-    .modal-content h2 { margin-bottom: 10px; }
-    .modal-content p { font-size: 18px; font-weight: 500; margin-bottom: 15px; }
-    .modal button {
-      padding: 12px 25px; border: none; background: #000;
-      color: #fff; border-radius: 10px; font-size: 16px;
-      cursor: pointer; transition: 0.2s;
-    }
-    .modal button:hover { background: #333; }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Universal QR Scanner — Web</title>
+<meta name="description" content="QR Scanner yang bekerja di sebagian besar HP via website (HTTPS required)" />
+<style>
+  :root{--bg:#000;--card:#fff;--accent:#2962FF;--ok:#00C853;--warn:#FFAB00;--err:#FF3D00}
+  html,body{height:100%;margin:0;background:var(--bg);color:#fff;font-family:Inter,system-ui,Segoe UI,Roboto,Arial}
+  #app{height:100%;display:flex;flex-direction:column}
+  #reader{flex:1; position:relative; background:#000; display:flex;align-items:center;justify-content:center}
+  video, canvas { width:100%; height:100%; object-fit:cover; }
+  #overlay { position:absolute; inset:0; pointer-events:none; }
+  /* scan window */
+  .scan-frame { position:absolute; left:8vw; top:20vh; width:84vw; height:60vh; border-radius:12px; box-shadow:0 0 0 100vmax rgba(0,0,0,0.45) inset; border:2px solid rgba(255,255,255,0.06); pointer-events:none; }
+  .scan-corners { position:absolute; inset:0; pointer-events:none; }
+  .scan-corners::before,.scan-corners::after{content:"";position:absolute; width:28px;height:28px;border:3px solid var(--accent)}
+  .scan-corners::before{left:6px;top:6px;border-right-width:0;border-bottom-width:0;border-top-left-radius:8px}
+  .scan-corners::after{right:6px;top:6px;border-left-width:0;border-bottom-width:0;border-top-right-radius:8px}
+  .scan-corners div{position:absolute;width:28px;height:28px;border:3px solid var(--accent);border-left-width:0;border-top-width:0}
+  .scan-corners div.left{left:6px;bottom:6px;border-bottom-left-radius:8px}
+  .scan-corners div.right{right:6px;bottom:6px;border-bottom-right-radius:8px}
+  /* top bar */
+  #topbar{position:absolute;top:env(safe-area-inset-top);left:0;right:0;padding:12px;text-align:center;z-index:30}
+  #hint{background:rgba(0,0,0,0.45);display:inline-block;padding:8px 14px;border-radius:20px;font-size:14px}
+  /* controls (hidden by default, for fallback) */
+  #controls{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);z-index:40;display:flex;gap:10px}
+  .control-btn{background:rgba(255,255,255,0.08);color:#fff;border:none;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600}
+  .control-btn:active{transform:scale(.98)}
+  /* modal */
+  #modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:100;align-items:center;justify-content:center}
+  .modal-card{background:var(--card);color:#111;padding:20px;border-radius:12px;width:min(92%,440px);text-align:center}
+  .modal-card h2{margin:0 0 8px}
+  .modal-card p{margin:6px 0}
+  .modal-actions{display:flex;gap:10px;justify-content:center;margin-top:12px}
+  .btn {padding:10px 16px;border-radius:10px;border:none;cursor:pointer}
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn.ghost{background:transparent;border:1px solid #ddd;color:#222}
+  /* small elements */
+  #statusToast{position:fixed;left:50%;transform:translateX(-50%);bottom:100px;background:rgba(0,0,0,0.6);color:#fff;padding:10px 14px;border-radius:10px;display:none;z-index:90}
+  #errorBox{position:fixed;top:70px;left:16px;right:16px;background:#2b2b2b;padding:10px;border-radius:8px;color:#fff;display:none;z-index:90}
+  /* loading overlay */
+  #loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:50}
+  .spinner{width:44px;height:44px;border-radius:50%;border:4px solid rgba(255,255,255,0.12);border-top-color:var(--accent);animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  /* responsive */
+  @media (max-width:420px){ .scan-frame{left:4vw;width:92vw;top:18vh;height:64vh} }
+</style>
 </head>
 <body>
-  <div id="reader"></div>
+<div id="app">
+  <div id="reader" aria-live="polite">
+    <!-- html5-qrcode will inject camera preview here -->
+    <div id="overlay">
+      <div class="scan-frame" aria-hidden="true">
+        <div class="scan-corners"><div class="left"></div><div class="right"></div></div>
+      </div>
+    </div>
 
-  <!-- Modal -->
-  <div id="resultModal" class="modal">
-    <div class="modal-content">
-      <h2 id="modalTitle">Hasil Scan</h2>
-      <p id="scanResult"></p>
-      <button onclick="closeModal()">OK</button>
+    <div id="loading"><div><div class="spinner"></div><div style="text-align:center;margin-top:10px;color:#ddd">Menyiapkan kamera...</div></div></div>
+    <div id="topbar"><div id="hint">Posisikan QR di dalam bingkai</div></div>
+    <div id="errorBox" role="alert"></div>
+    <div id="statusToast"></div>
+
+    <div id="controls" style="display:none">
+      <button id="cameraSelectBtn" class="control-btn">Pilih Kamera</button>
+      <button id="manualBtn" class="control-btn">Input Manual</button>
     </div>
   </div>
+</div>
 
-  <!-- Beep sounds -->
-  <audio id="beepSuccess" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
-  <audio id="beepError" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
+<!-- modal -->
+<div id="modal" role="dialog" aria-modal="true">
+  <div class="modal-card">
+    <h2 id="modalTitle">Hasil Scan</h2>
+    <p id="modalBody"></p>
+    <div class="modal-actions">
+      <button id="modalClose" class="btn ghost">Tutup</button>
+      <button id="modalNext" class="btn primary">Pindai Lagi</button>
+    </div>
+  </div>
+</div>
 
-  <!-- QR Scanner Library -->
-  <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
-  <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycby_KZar7ssIv9wK5CRHUe0t-VoKmfgf-ihUHNvjIMH1O2R4zZWQeDDI_ETt2v54fGE/exec"; // Ganti dengan URL Web App Apps Script
+<!-- audio -->
+<audio id="beepGood" preload="auto"><source src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" type="audio/ogg"></audio>
+<audio id="beepBad" preload="auto"><source src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" type="audio/ogg"></audio>
 
-    let html5QrCode;
-    const beepSuccess = document.getElementById("beepSuccess");
-    const beepError = document.getElementById("beepError");
-    const modal = document.getElementById("resultModal");
-    const scanResult = document.getElementById("scanResult");
-    const modalTitle = document.getElementById("modalTitle");
+<!-- html5-qrcode -->
+<script src="https://unpkg.com/html5-qrcode@2.3.7/minified/html5-qrcode.min.js"></script>
+<script>
+/*
+  Universal web QR scanner
+  - Best-effort compatibility for Android & iOS (modern browsers)
+  - Requires HTTPS to access camera on most devices
+  - Uses Html5Qrcode (works well cross-platform)
+*/
 
-    function showModal(title, text, success=true) {
-      modalTitle.textContent = title;
-      scanResult.textContent = text;
-      modal.style.display = "flex";
-      success ? beepSuccess.play() : beepError.play();
+const loading = document.getElementById('loading');
+const errorBox = document.getElementById('errorBox');
+const statusToast = document.getElementById('statusToast');
+const controls = document.getElementById('controls');
+const cameraSelectBtn = document.getElementById('cameraSelectBtn');
+const manualBtn = document.getElementById('manualBtn');
+
+const modal = document.getElementById('modal');
+const modalTitle = document.getElementById('modalTitle');
+const modalBody = document.getElementById('modalBody');
+const modalClose = document.getElementById('modalClose');
+const modalNext = document.getElementById('modalNext');
+
+const beepGood = document.getElementById('beepGood');
+const beepBad = document.getElementById('beepBad');
+
+let html5QrCode = null;
+let cameras = [];
+let currentCameraId = null;
+let isScanning = false;
+let lastScan = null;
+let autoCloseTimer = null;
+
+// Configuration
+const CONFIG = {
+  fps: 10,
+  qrboxPercent: 0.7, // fraction of shorter side used as box
+  modalAutoCloseSeconds: 3,
+  apiEndpoint: null // if you have Apps Script endpoint, set here (optional)
+};
+
+// helpers
+function showLoading(yes=true, msg) {
+  loading.style.display = yes ? 'flex' : 'none';
+  if (msg) loading.querySelector('div div + div').textContent = msg;
+}
+function showError(msg) {
+  errorBox.style.display = 'block';
+  errorBox.textContent = msg;
+  setTimeout(()=>{ errorBox.style.display='none'; }, 8000);
+}
+function showToast(msg, timeout=1400) {
+  statusToast.style.display = 'block';
+  statusToast.textContent = msg;
+  clearTimeout(statusToast._t);
+  statusToast._t = setTimeout(()=> statusToast.style.display='none', timeout);
+}
+function isHTTPS() {
+  return location.protocol === 'https:' || location.hostname === 'localhost';
+}
+function tryPlay(audio) {
+  if (!audio) return;
+  audio.currentTime = 0;
+  audio.play().catch(e=>{/* ignore autoplay restrictions */});
+}
+
+// compute qrbox size in px based on viewport
+function computeQrbox() {
+  const vw = Math.min(window.innerWidth, window.innerHeight);
+  const size = Math.floor(vw * CONFIG.qrboxPercent);
+  return { width: size, height: size };
+}
+
+// choose best camera id (rear) using labels when available
+function choosePreferredCamera(devs) {
+  if (!devs || devs.length === 0) return null;
+  // prefer label containing back/rear/tele
+  const back = devs.find(d => /rear|back|environment|wide|zoom|tele/i.test(d.label));
+  if (back) return back.id;
+  // otherwise pick last (usually rear)
+  return devs[devs.length - 1].id;
+}
+
+// start scanning function with robust fallbacks
+async function startScanner() {
+  if (!isHTTPS()) {
+    showError('Kamera hanya tersedia pada halaman dengan HTTPS. Deploy ke Vercel/Netlify/GitHub Pages atau akses via https.');
+    showLoading(false);
+    return;
+  }
+
+  try {
+    showLoading(true, 'Mendeteksi kamera...');
+    html5QrCode = html5QrCode || new Html5Qrcode(/* element id */ "reader", /* verbose */ { fps: CONFIG.fps });
+
+    // try list cameras (may fail on some browsers until getUserMedia is called)
+    try {
+      cameras = await Html5Qrcode.getCameras();
+    } catch (e) {
+      cameras = [];
+      console.warn('getCameras failed:', e);
     }
 
-    function closeModal() {
-      modal.style.display = "none";
-      restartScanner();
-    }
-
-    function startScanner() {
-      html5QrCode = new Html5Qrcode("reader");
-      const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-
-      html5QrCode.start(
-        { facingMode: "environment" },
-        config,
-        (decodedText) => {
-          // Stop scanner sementara
-          html5QrCode.stop().catch(err => console.error("Stop error:", err));
-
-          // Kirim ke API
-          fetch(API_URL, {
-            method: "POST",
-            body: JSON.stringify({ kode: decodedText }),
-            headers: { "Content-Type": "application/json" }
-          })
-          .then(res => res.json())
-          .then(data => {
-            if (data.status === "valid") {
-              showModal("Tiket Valid ✅", data.message, true);
-            } else if (data.status === "invalid") {
-              showModal("Tiket Tidak Valid ❌", data.message, false);
-            } else {
-              showModal("Error ⚠️", "Terjadi kesalahan server", false);
-            }
-          })
-          .catch(err => {
-            showModal("Error ⚠️", "Tidak bisa terhubung ke server", false);
-          });
-        },
-        (errorMessage) => { /* abaikan error scanning */ }
-      ).catch(err => {
-        console.error("Camera start error:", err);
-      });
-    }
-
-    function restartScanner() {
-      if (html5QrCode) {
-        startScanner();
+    // If no cameras found via API, try quick getUserMedia to force device enumerate on some iOS
+    if ((!cameras || cameras.length === 0) && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      try {
+        const tmpStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        // stop immediately
+        tmpStream.getTracks().forEach(t=>t.stop());
+        try { cameras = await Html5Qrcode.getCameras(); } catch(e){ cameras = []; }
+      } catch (err) {
+        console.warn('tiny getUserMedia fallback failed:', err);
       }
     }
 
-    // Jalankan langsung
+    // If still no cameras, try start with facingMode fallback
+    if (!cameras || cameras.length === 0) {
+      showToast('Memulai kamera (fallback)...');
+      const cfg = { fps: CONFIG.fps, qrbox: computeQrbox() };
+      await html5QrCode.start(
+        { facingMode: { ideal: "environment" } },
+        cfg,
+        onScanSuccess,
+        onScanFailure
+      );
+      isScanning = true;
+      showLoading(false);
+      controls.style.display = 'flex';
+      return;
+    }
+
+    // cameras found -> choose one
+    currentCameraId = choosePreferredCamera(cameras) || cameras[0].id;
+    // if many cameras, show select button
+    if (cameras.length > 1) {
+      cameraSelectBtn.style.display = 'inline-block';
+      cameraSelectBtn.onclick = async ()=> {
+        // build simple select prompt (native)
+        const labels = cameras.map((c,i)=>`${i+1}. ${c.label||'camera '+(i+1)}`);
+        const choice = prompt('Pilih kamera:\n' + labels.join('\n') + '\nKetik nomor kamera:','1');
+        const idx = parseInt(choice) - 1;
+        if (!isNaN(idx) && cameras[idx]) {
+          currentCameraId = cameras[idx].id;
+          await restartScanner();
+        }
+      };
+    }
+
+    // start with chosen camera id
+    const cfg = { fps: CONFIG.fps, qrbox: computeQrbox() };
+    await html5QrCode.start(
+      currentCameraId,
+      cfg,
+      onScanSuccess,
+      onScanFailure
+    );
+
+    isScanning = true;
+    showLoading(false);
+    controls.style.display = 'flex';
+    showToast('Kamera aktif');
+  } catch (err) {
+    console.error('startScanner error', err);
+    showLoading(false);
+    showError('Gagal mengakses kamera: ' + (err && err.message ? err.message : err));
+  }
+}
+
+function onScanSuccess(decodedText, decodedResult) {
+  // dedupe identical immediate scans
+  if (decodedText && lastScan && lastScan === decodedText) return;
+  lastScan = decodedText;
+
+  // stop temporarily to avoid duplicates
+  if (html5QrCode && isScanning) {
+    html5QrCode.pause(true);
+  }
+
+  // optionally, call API if configured
+  if (CONFIG.apiEndpoint) {
+    fetch(CONFIG.apiEndpoint, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ kode: decodedText })
+    }).then(r=>r.json()).then(json=>{
+      handleApiResult(decodedText, json);
+    }).catch(err=>{
+      // fallback: show raw text but mark error
+      showModal('Hasil Scan (offline)', decodedText + '\n(Tidak bisa hubungi server)', 'error');
+      tryPlay(beepBad);
+      console.warn('API call failed', err);
+    });
+  } else {
+    // no API => show raw text success
+    showModal('Hasil Scan', decodedText, 'success');
+    tryPlay(beepGood);
+  }
+}
+
+function handleApiResult(code, json) {
+  // Expect the Apps Script to return a JSON with status: valid|invalid|duplicate and message
+  if (!json) {
+    showModal('Server Error', 'Respons server kosong', 'error'); tryPlay(beepBad); return;
+  }
+  if (json.status === 'valid') {
+    showModal('Tiket Valid', json.message || 'Valid — check-in tercatat', 'success');
+    tryPlay(beepGood);
+  } else if (json.status === 'duplicate') {
+    showModal('Sudah Check-in', json.message || 'Tiket sudah dipakai sebelumnya', 'warn');
+    tryPlay(beepBad);
+  } else if (json.status === 'invalid') {
+    showModal('Tidak Valid', json.message || 'Tiket tidak ditemukan', 'error');
+    tryPlay(beepBad);
+  } else {
+    showModal('Info', JSON.stringify(json), 'error'); tryPlay(beepBad);
+  }
+}
+
+function onScanFailure(error) {
+  // frequent small failures are normal; we ignore them
+  // console.debug('scan fail', error);
+}
+
+// shows modal and auto-close
+function showModal(title, text, type='success') {
+  modalTitle.textContent = title;
+  modalBody.textContent = text;
+  modal.style.display = 'flex';
+
+  // auto-close timer
+  clearTimeout(autoCloseTimer);
+  autoCloseTimer = setTimeout(()=> {
+    closeModal();
+  }, CONFIG.modalAutoCloseSeconds * 1000);
+}
+
+function closeModal() {
+  modal.style.display = 'none';
+  lastScan = null;
+  // resume scanning
+  if (html5QrCode) {
+    // prefer resume if available
+    try {
+      html5QrCode.resume();
+    } catch (e) {
+      // fallback restart
+      restartScanner();
+    }
+  } else {
     startScanner();
-  </script>
+  }
+}
+
+async function restartScanner() {
+  try {
+    if (html5QrCode) {
+      try { await html5QrCode.stop(); } catch(e) { /* ignore */ }
+      html5QrCode.clear();
+      html5QrCode = new Html5Qrcode("reader");
+    }
+    startScanner();
+  } catch (e) {
+    console.warn('restart error', e);
+  }
+}
+
+// Manual input fallback
+manualBtn.addEventListener('click', ()=> {
+  const value = prompt('Masukkan kode tiket secara manual (copy-paste):');
+  if (value) {
+    // simulate success flow
+    if (CONFIG.apiEndpoint) {
+      fetch(CONFIG.apiEndpoint, {
+        method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ kode: value })
+      }).then(r=>r.json()).then(json=>handleApiResult(value,json)).catch(err=>{ showModal('Error','Tidak bisa terhubung', 'error'); tryPlay(beepBad); });
+    } else {
+      showModal('Manual Input', value, 'success'); tryPlay(beepGood);
+    }
+  }
+});
+
+modalClose.addEventListener('click', closeModal);
+modalNext.addEventListener('click', closeModal);
+
+window.addEventListener('load', ()=> {
+  // If you want to wire API endpoint, set here:
+  // CONFIG.apiEndpoint = 'https://script.google.com/macros/s/YOUR_ID/exec';
+  // start
+  startScanner();
+});
+
+// Pause on visibility change to save battery
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    if (html5QrCode && isScanning) {
+      try { html5QrCode.pause(); } catch(e) {}
+    }
+  } else {
+    if (html5QrCode && isScanning) {
+      try { html5QrCode.resume(); } catch(e) {}
+    }
+  }
+});
+
+// handle orientation / resize -> recompute qrbox size
+let resizeTimer;
+window.addEventListener('resize', ()=> {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(async ()=> {
+    if (html5QrCode && isScanning) {
+      try {
+        const qrbox = computeQrbox();
+        await html5QrCode.stop();
+        await html5QrCode.start(currentCameraId || {facingMode:{ideal:'environment'}}, {fps: CONFIG.fps, qrbox}, onScanSuccess, onScanFailure);
+      } catch(e){ console.warn('resize restart failed', e); }
+    }
+  }, 300);
+});
+</script>
 </body>
 </html>
