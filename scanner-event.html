@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QR Scanner Fullscreen</title>
+  <title>QR Scanner Tiket</title>
   <style>
     body, html {
       margin: 0;
@@ -43,23 +43,23 @@
     }
     #modalContent {
       background: #fff;
-      padding: 20px;
-      border-radius: 10px;
+      padding: 20px 30px;
+      border-radius: 12px;
       max-width: 90%;
       text-align: center;
+      animation: fadeIn 0.3s ease;
+    }
+    #modalContent h3 {
+      margin: 0 0 15px;
+      color: #28a745;
     }
     #modalContent p {
-      margin-bottom: 20px;
-      word-break: break-all;
+      font-size: 14px;
+      word-break: break-word;
     }
-    #closeBtn {
-      background: #007bff;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 16px;
+    @keyframes fadeIn {
+      from {opacity: 0; transform: scale(0.9);}
+      to {opacity: 1; transform: scale(1);}
     }
   </style>
 </head>
@@ -72,9 +72,14 @@
     <div id="modalContent">
       <h3>✅ QR Code Terdeteksi</h3>
       <p id="scanResult"></p>
-      <button id="closeBtn">Tutup</button>
+      <small>Menutup otomatis...</small>
     </div>
   </div>
+
+  <!-- Suara beep -->
+  <audio id="beepSound" preload="auto">
+    <source src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" type="audio/ogg">
+  </audio>
 
   <!-- Library qr-scanner -->
   <script src="https://unpkg.com/qr-scanner/qr-scanner.min.js"></script>
@@ -82,8 +87,9 @@
     const videoElem = document.getElementById("video");
     const modal = document.getElementById("modal");
     const scanResult = document.getElementById("scanResult");
-    const closeBtn = document.getElementById("closeBtn");
+    const beepSound = document.getElementById("beepSound");
     let qrScanner;
+    let autoCloseTimer;
 
     async function startScanner() {
       try {
@@ -99,8 +105,9 @@
         videoElem.srcObject = stream;
 
         qrScanner = new QrScanner(videoElem, result => {
+          playBeep();
           showModal(result.data);
-          qrScanner.stop(); // hentikan scan setelah sukses
+          qrScanner.stop();
         }, {
           highlightScanRegion: true,
           highlightCodeOutline: true
@@ -112,6 +119,11 @@
       }
     }
 
+    function playBeep() {
+      beepSound.currentTime = 0; // reset biar bisa play cepat berulang
+      beepSound.play();
+    }
+
     function showModal(data) {
       if (data.startsWith("http://") || data.startsWith("https://")) {
         scanResult.innerHTML = `<a href="${data}" target="_blank">${data}</a>`;
@@ -119,12 +131,13 @@
         scanResult.textContent = data;
       }
       modal.style.display = "flex";
-    }
 
-    closeBtn.addEventListener("click", () => {
-      modal.style.display = "none";
-      startScanner(); // restart scan
-    });
+      clearTimeout(autoCloseTimer);
+      autoCloseTimer = setTimeout(() => {
+        modal.style.display = "none";
+        startScanner(); // restart scanner
+      }, 3000);
+    }
 
     startScanner();
   </script>
