@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Scanner Tiket - Check-in</title>
+  <style>
+    body { font-family: Inter, system-ui, sans-serif; display:flex; flex-direction:column; align-items:center; padding:18px; background:#f5f7fb; color:#111; }
+    h1 { margin:12px 0 6px; font-size:20px; }
+    #reader { width:100%; max-width:420px; border-radius:12px; overflow:hidden; background:#000; }
+    .status { margin-top:12px; min-height:48px; width:100%; max-width:420px; text-align:center; padding:10px; border-radius:8px; }
+    .ok { background:#e6ffef; color:#026a2f; border:1px solid #a6e9c8; }
+    .error { background:#ffecec; color:#8a1b1b; border:1px solid #f3b0b0; }
+    .info { background:#fff; color:#444; border:1px solid #e5e9ef; }
+    .controls { margin-top:12px; display:flex; gap:8px; }
+    button { padding:8px 12px; border-radius:8px; border:none; cursor:pointer; }
+    .btn-primary { background:#0b61ff; color:white; }
+    .btn-secondary { background:#fff; border:1px solid #d0d7e6; }
+    .small { font-size:13px; color:#666; margin-top:6px; }
+  </style>
+  <!-- HTML5 QR Code library -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.7/minified/html5-qrcode.min.js"></script>
+</head>
+<body>
+  <h1>Scanner Tiket — Check-in</h1>
+
+  <div id="reader"></div>
+
+  <div class="controls">
+    <button id="startBtn" class="btn-primary">Mulai Scan</button>
+    <button id="stopBtn" class="btn-secondary">Berhenti</button>
+  </div>
+
+  <div id="status" class="status info">Status: siap</div>
+  <div id="detail" class="small"></div>
+
+  <script>
+    // CONFIG: ganti URL dan TOKEN sesuai deploy Google Apps Script-mu
+    const VERIFY_URL = "https://script.google.com/macros/s/AKfycbxEXAMPLE/exec"; // <-- ganti ini
+    const API_TOKEN  = "CHANGE_THIS_TOKEN"; // <-- ganti ke token secret
+
+    const html5QrCode = new Html5Qrcode(/* element id */ "reader");
+    const qrboxSize = 280;
+
+    const statusEl = document.getElementById("status");
+    const detailEl = document.getElementById("detail");
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn  = document.getElementById("stopBtn");
+
+    function setStatus(text, cls="info"){
+      statusEl.textContent = text;
+      statusEl.className = `status ${cls}`;
+    }
+
+    function setDetail(text){
+      detailEl.textContent = text || "";
+    }
+
+    async function verifyTicket(code) {
+      setStatus("Memverifikasi tiket...", "info");
+      setDetail("Kode: " + code);
+
+      try {
+        const resp = await fetch(VERIFY_URL + "?ticket=" + encodeURIComponent(code), {
+          method: "GET",
+          headers: {
+            "x-api-token": API_TOKEN,
+            "Accept": "application/json"
+          }
+        });
+        if (!resp.ok) {
+          const text = await resp.text();
+          throw new Error("HTTP " + resp.status + " - " + text);
+        }
+        const json = await resp.json();
+
+        // contoh response: { ok:true, status:"ok"|"used"|"not_found", name:"Nama", email:"", message:"" }
+        if (json.ok && json.status === "ok") {
+          setStatus("Tiket VALID — Check-in berhasil ✅", "ok");
+          setDetail(`${json.name || "-"} • ${json.email || "-"}`);
+          // bunyikan beep singkat
+          playBeep();
+        } else if (json.ok && json.status === "used") {
+          setStatus("Tiket sudah digunakan sebelumnya ⚠️", "error");
+          setDetail(`${json.name || "-"} • ${json.email || "-"}`);
+          playBeep(2);
+        } else {
+          setStatus("Tiket TIDAK DITEMUKAN / tidak valid ❌", "error");
+          setDetail(json.message || "");
+          playBeep(3);
+        }
+      } catch (err) {
+        setStatus("Kesalahan jaringan / server", "error");
+        setDetail(err.message);
+        console.error(err);
+      }
+    }
+
+    // Beep helper
+    function playBeep(type = 1) {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = "sine";
+      if (type === 1) o.frequency.value = 1000;
+      if (type === 2) o.frequency.value = 600;
+      if (type === 3) o.frequency.value = 250;
+      o.connect(g);
+      g.connect(ctx.destination);
+      g.gain.value = 0.0001;
+      o.start();
+      g.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.3);
+      o.stop(ctx.currentTime + 0.31);
+    }
+
+    let isScanning = false;
+
+    async function startScanner() {
+      if (isScanning) return;
+      setStatus("Mencari kamera...", "info");
+
+      try {
+        const devices = await Html5Qrcode.getCameras();
+        if (!devices || devices.length === 0) {
+          setStatus("Tidak ada kamera terdeteksi", "error");
+          return;
+        }
+        // pilih kamera belakang bila ada
+        let cameraId = devices[0].id;
+        for (const d of devices) {
+          if (d.label && /back|rear|belakang/i.test(d.label)) { cameraId = d.id; break; }
+        }
+
+        await html5QrCode.start(
+          cameraId,
+          {
+            fps: 15,
+            qrbox: Math.min(qrboxSize, window.innerWidth - 40)
+          },
+          qrCodeMessage => {
+            // ketika scan berhasil
+            if (!qrCodeMessage) return;
+            // hentikan scanning sementara untuk hindari double-scan
+            html5QrCode.pause(true);
+            isScanning = true;
+            verifyTicket(qrCodeMessage).finally(() => {
+              // resume scanning setelah 1.2 detik
+              setTimeout(() => {
+                html5QrCode.resume();
+                isScanning = false;
+                setStatus("Siap scan", "info");
+              }, 1200);
+            });
+          },
+          errorMessage => {
+            // ignore small errors
+          }
+        );
+        setStatus("Siap scan", "info");
+      } catch (err) {
+        setStatus("Gagal mulai kamera: " + err.message, "error");
+        console.error(err);
+      }
+    }
+
+    async function stopScanner() {
+      try {
+        await html5QrCode.stop();
+        html5QrCode.clear();
+        setStatus("Scanner berhenti", "info");
+      } catch (err) {
+        console.warn("stop error", err);
+      }
+    }
+
+    startBtn.addEventListener("click", startScanner);
+    stopBtn.addEventListener("click", stopScanner);
+
+    // auto-start for convenience
+    // startScanner();
+  </script>
+</body>
+</html>
