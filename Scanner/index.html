@@ -52,7 +52,10 @@ h2 { margin:20px 0; color:#00bfff; }
     <h3 id="modalTitle">Judul</h3>
     <p id="modalMessage">Pesan</p>
     <div id="countdown"></div>
-    <button onclick="closeModal()">Tutup</button>
+    <div style="margin-top:15px;">
+      <button onclick="closeModal()">Tutup</button>
+      <button onclick="bypassClose()" style="margin-left:10px;">Scan Lanjut</button>
+    </div>
   </div>
 </div>
 
@@ -69,6 +72,7 @@ const beepInvalid = document.getElementById("beepInvalid");
 const beepUsed = document.getElementById("beepUsed");
 
 let modalTimer;
+let autoCloseEnabled = true;
 
 function showModal(type, title, message) {
   const modal = document.getElementById("resultModal");
@@ -81,8 +85,8 @@ function showModal(type, title, message) {
   modalTitle.innerText = title;
   modalMessage.innerText = message;
 
-  content.className="modal-content"; // reset
-  countdown.innerText="";
+  content.className = "modal-content"; // reset
+  countdown.innerText = "";
 
   if(type==="success"){ content.classList.add("success"); icon.innerText="✅"; beepValid.play();}
   else if(type==="warning"){ content.classList.add("warning"); icon.innerText="⚠"; beepUsed.play();}
@@ -90,20 +94,29 @@ function showModal(type, title, message) {
 
   modal.style.display="flex";
 
-  // Auto-close modal 3 detik
-  let timeLeft=3;
-  countdown.innerText=`Menutup dalam ${timeLeft} detik...`;
+  // Auto-close modal 3 detik (hanya jika tidak di-bypass)
+  if(autoCloseEnabled){
+    let timeLeft=3;
+    countdown.innerText=`Menutup dalam ${timeLeft} detik...`;
+    clearInterval(modalTimer);
+    modalTimer=setInterval(()=>{
+      timeLeft--;
+      if(timeLeft>0) countdown.innerText=`Menutup dalam ${timeLeft} detik...`;
+      else closeModal();
+    },1000);
+  }
+}
+
+function bypassClose(){
   clearInterval(modalTimer);
-  modalTimer=setInterval(()=>{
-    timeLeft--;
-    if(timeLeft>0) countdown.innerText=`Menutup dalam ${timeLeft} detik...`;
-    else closeModal();
-  },1000);
+  document.getElementById("countdown").innerText = "Auto-close dibypass, tekan 'Tutup' untuk lanjut.";
+  autoCloseEnabled = false;
 }
 
 function closeModal(){
   clearInterval(modalTimer);
   document.getElementById("resultModal").style.display="none";
+  autoCloseEnabled = true; // Reset untuk scan berikutnya
 }
 
 function updateProcessing(show){ document.getElementById("processing").style.display = show ? "block" : "none"; }
