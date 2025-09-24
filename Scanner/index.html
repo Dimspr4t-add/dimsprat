@@ -1,225 +1,277 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Scanner Tiket + Live History Auto-Refresh</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;500;700&display=swap" rel="stylesheet">
-<style>
-body { margin:0; padding:0; font-family:'Rajdhani', sans-serif; background:#121212; color:#fff; text-align:center; overflow-x:hidden; }
-h2 { margin:20px 0; color:#00bfff; }
-button { padding:12px 25px; margin:10px; font-size:1rem; border:none; border-radius:10px; cursor:pointer; transition:0.3s; font-family:'Orbitron', sans-serif; box-shadow:0 4px 15px rgba(0,0,0,0.5); }
-button:hover { transform:translateY(-2px); opacity:0.95; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistem Check-in Tiket</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <style>
+    body {
+      font-family: "Rajdhani", sans-serif;
+      background: #111;
+      color: #fff;
+      margin: 0;
+    }
+    header {
+      background: #222;
+      padding: 10px 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header h1 { margin: 0; font-size: 18px; }
+    nav button {
+      background: #333;
+      border: none;
+      color: #fff;
+      padding: 8px 12px;
+      margin-left: 5px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    nav button.active { background: #e50914; }
 
-#modeSelection, #scannerSection, #manualSection { transition:opacity 0.5s ease; }
-#scannerSection, #manualSection { display:none; margin-top:20px; }
+    main { padding: 20px; }
+    .btn {
+      background: #e50914;
+      border: none;
+      color: #fff;
+      padding: 10px 16px;
+      margin: 6px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .btn:hover { background: #b20710; }
+    .hidden { display: none; }
 
-#reader { width:320px; margin:20px auto; border-radius:12px; overflow:hidden; box-shadow:0 0 25px rgba(0,0,0,0.7); }
-#barcodeInput { padding:15px; font-size:1.1rem; border-radius:10px; width:250px; text-align:center; background:#1f1f1f; color:#fff; border:2px solid #333; }
+    /* Modal */
+    .modal {
+      position: fixed; top:0; left:0;
+      width:100%; height:100%;
+      display:none; justify-content:center; align-items:center;
+      background: rgba(0,0,0,0.8);
+      z-index: 1000;
+    }
+    .modal-content {
+      background:#222; padding:20px; border-radius:10px;
+      max-width:400px; text-align:center;
+    }
+    .modal-content.success { border:2px solid #4caf50; }
+    .modal-content.warning { border:2px solid #ff9800; }
+    .modal-content.error { border:2px solid #f44336; }
 
-#processing, #processingManual { display:none; margin-top:15px; font-weight:bold; color:#00f; animation:pulse 1.5s infinite; }
-@keyframes pulse { 0%{opacity:0.5;} 50%{opacity:1;} 100%{opacity:0.5;} }
-
-/* Modal styles */
-.modal { display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.7); backdrop-filter:blur(5px); justify-content:center; align-items:center; }
-.modal-content { background:#1e1e1e; padding:30px 20px; border-radius:15px; width:90%; max-width:400px; text-align:center; box-shadow:0 8px 25px rgba(0,0,0,0.7); position:relative; transform:scale(0.9); opacity:0; transition: all 0.3s ease; }
-.modal.show { transform:scale(1); opacity:1; }
-.modal h1 { font-size:3rem; margin:0; transition:0.3s; }
-.modal h3 { margin:10px 0; font-size:1.5rem; }
-.modal p { margin:10px 0; line-height:1.5; color:#ddd; white-space:pre-line; }
-.modal button { margin-top:15px; padding:10px 25px; font-weight:bold; border:none; border-radius:8px; cursor:pointer; transition:0.2s; font-family:'Orbitron', sans-serif; }
-.modal button:hover { opacity:0.9; }
-
-.success h1 { color:#0f0; } .success h3 { color:#0f0; } .success button { background:#0f0; color:#000; }
-.warning h1 { color:#ffa500; } .warning h3 { color:#ffa500; } .warning button { background:#ffa500; color:#000; }
-.error h1 { color:#f00; } .error h3 { color:#f00; } .error button { background:#f00; color:#fff; }
-
-/* History Table */
-#historyTable { width:90%; max-width:800px; margin:30px auto; border-collapse:collapse; }
-#historyTable th, #historyTable td { border:1px solid #444; padding:8px; font-size:0.95rem; }
-#historyTable th { background:#222; }
-.highlight { background:#006400; animation:flashHighlight 2s; }
-@keyframes flashHighlight { 0%{background:#006400;}50%{background:#004000;}100%{background:#006400;} }
-</style>
-<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    /* Table */
+    table {
+      width:100%; border-collapse: collapse; margin-top:10px;
+    }
+    table th, table td {
+      border:1px solid #444; padding:8px; text-align:left;
+    }
+    table th { background:#222; }
+  </style>
 </head>
 <body>
 
-<h2>📌 Scanner Tiket Check-In</h2>
+  <header>
+    <h1>🎟️ Sistem Check-in</h1>
+    <nav>
+      <button id="tabScanner" class="active" onclick="showPage('scannerPage')">Scanner</button>
+      <button id="tabHistory" onclick="showPage('historyPage')">Histori</button>
+    </nav>
+  </header>
 
-<div id="modeSelection">
-  <button onclick="startScannerMode()">📷 Scan Barcode</button>
-  <button onclick="startManualMode()">⌨️ Manual Input</button>
-</div>
+  <main>
+    <!-- Scanner Page -->
+    <section id="scannerPage">
+      <div id="modeSelection">
+        <button class="btn" onclick="startScanner()">📷 Scan QR Code</button>
+        <button class="btn" onclick="showManual()">⌨️ Input Kode Manual</button>
+      </div>
 
-<div id="scannerSection">
-  <div id="reader"></div>
-  <div id="processing">🔄 Memproses...</div>
-</div>
+      <div id="scannerSection" class="hidden">
+        <div id="reader" style="width:300px; margin:auto;"></div>
+        <button class="btn" onclick="stopScanner()">⬅ Kembali</button>
+      </div>
 
-<div id="manualSection">
-  <input type="text" id="barcodeInput" placeholder="Masukkan kode unik...">
-  <div id="processingManual">🔄 Memproses...</div>
-  <button onclick="processManualCode()">Check-In</button>
-</div>
+      <div id="manualSection" class="hidden">
+        <input type="text" id="manualCode" placeholder="Masukkan ID Tiket" style="padding:10px;width:250px;">
+        <br>
+        <button class="btn" onclick="submitManual()">✅ Check</button>
+        <button class="btn" onclick="backToMenu()">⬅ Kembali</button>
+      </div>
+    </section>
 
-<!-- Modal -->
-<div id="resultModal" class="modal">
-  <div id="modalContent" class="modal-content">
-    <h1 id="modalIcon">❌</h1>
-    <h3 id="modalTitle">Judul</h3>
-    <p id="modalMessage">Pesan</p>
-    <div style="margin-top:15px;">
-      <button onclick="closeModal()">Tutup</button>
-      <button onclick="bypassClose()" style="margin-left:10px;">Scan Lanjut</button>
+    <!-- History Page -->
+    <section id="historyPage" class="hidden">
+      <h2>📑 Histori Check-in</h2>
+      <button class="btn" onclick="loadHistory()">🔄 Refresh</button>
+      <table>
+        <thead>
+          <tr>
+            <th>Kode Pesanan</th>
+            <th>Nama</th>
+            <th>Jenis Tiket</th>
+            <th>Waktu Check-in</th>
+          </tr>
+        </thead>
+        <tbody id="historyTable">
+          <tr><td colspan="4">Klik refresh untuk memuat data...</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <!-- Modal -->
+  <div id="resultModal" class="modal">
+    <div id="modalContent" class="modal-content">
+      <h1 id="modalIcon">❌</h1>
+      <h3 id="modalTitle">Judul</h3>
+      <p id="modalMessage">Pesan</p>
+      <div style="margin-top:15px;">
+        <button onclick="closeModal()">Tutup</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- History Table -->
-<h3>History Check-In</h3>
-<table id="historyTable">
-  <thead>
-    <tr><th>No</th><th>Kode</th><th>Nama</th><th>Tiket</th><th>Waktu</th></tr>
-  </thead>
-  <tbody></tbody>
-</table>
+  <script>
+    const SHEET_API = "https://script.google.com/macros/s/AKfycby_KZar7ssIv9wK5CRHUe0t-VoKmfgf-ihUHNvjIMH1O2R4zZWQeDDI_ETt2v54fGE/exec"; // ganti dengan URL Web App GAS kamu
+    let html5QrCode;
 
-<!-- Suara -->
-<audio id="beepValid" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" preload="auto"></audio>
-<audio id="beepInvalid" src="https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg" preload="auto"></audio>
-<audio id="beepUsed" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
+    // Suara
+    const beepValid = new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
+    const beepUsed = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
+    const beepInvalid = new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg");
 
-<script>
-const SHEET_API="https://script.google.com/macros/s/AKfycby_KZar7ssIv9wK5CRHUe0t-VoKmfgf-ihUHNvjIMH1O2R4zZWQeDDI_ETt2v54fGE/exec"; // Ganti URL GAS
-const beepValid=document.getElementById("beepValid");
-const beepInvalid=document.getElementById("beepInvalid");
-const beepUsed=document.getElementById("beepUsed");
-let modalTimer, autoCloseEnabled=true, html5QrCode, historyCount=0;
-let lastHistoryIds=[];
+    // Tab Navigation
+    function showPage(pageId){
+      document.getElementById("scannerPage").classList.add("hidden");
+      document.getElementById("historyPage").classList.add("hidden");
+      document.getElementById(pageId).classList.remove("hidden");
 
-// Modal Functions
-function showModal(type,title,message){
-  const modal=document.getElementById("resultModal");
-  const content=document.getElementById("modalContent");
-  const icon=document.getElementById("modalIcon");
-  const modalTitle=document.getElementById("modalTitle");
-  const modalMessage=document.getElementById("modalMessage");
+      document.getElementById("tabScanner").classList.remove("active");
+      document.getElementById("tabHistory").classList.remove("active");
+      if(pageId==="scannerPage") document.getElementById("tabScanner").classList.add("active");
+      else document.getElementById("tabHistory").classList.add("active");
 
-  modalTitle.innerText=title;
-  modalMessage.innerText=message;
-  content.className="modal-content show";
+      if(pageId==="historyPage"){ loadHistory(); }
+    }
 
-  if(type==="success"){ content.classList.add("success"); icon.innerText="✅"; beepValid.play();}
-  else if(type==="warning"){ content.classList.add("warning"); icon.innerText="⚠"; beepUsed.play();}
-  else{ content.classList.add("error"); icon.innerText="❌"; beepInvalid.play(); }
+    // Scanner
+    function startScanner() {
+      document.getElementById("modeSelection").classList.add("hidden");
+      document.getElementById("scannerSection").classList.remove("hidden");
 
-  modal.style.display="flex";
+      html5QrCode = new Html5Qrcode("reader");
+      html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 250 },
+        qrCodeMessage => {
+          stopScanner();
+          checkTicket(qrCodeMessage);
+        }
+      ).catch(err => {
+        alert("Gagal akses kamera: " + err);
+        backToMenu();
+      });
+    }
 
-  if(autoCloseEnabled){
-    let timeLeft=3;
-    clearInterval(modalTimer);
-    modalTimer=setInterval(()=>{
-      timeLeft--;
-      if(timeLeft<=0){ closeModal(); clearInterval(modalTimer);}
-    },1000);
-  }
-}
+    function stopScanner() {
+      if (html5QrCode) {
+        html5QrCode.stop().catch(()=>{});
+        html5QrCode.clear();
+      }
+      backToMenu();
+    }
 
-function bypassClose(){ clearInterval(modalTimer); autoCloseEnabled=false; }
-function closeModal(){
-  const modal=document.getElementById("resultModal");
-  modal.style.display="none";
-  autoCloseEnabled=true;
-  if(document.getElementById("scannerSection").style.display==="block") startScannerMode();
-}
+    function showManual() {
+      document.getElementById("modeSelection").classList.add("hidden");
+      document.getElementById("manualSection").classList.remove("hidden");
+    }
 
-// Show processing
-function updateProcessing(show,manual=false){
-  if(manual) document.getElementById("processingManual").style.display=show?"block":"none";
-  else document.getElementById("processing").style.display=show?"block":"none";
-}
+    function submitManual() {
+      const code = document.getElementById("manualCode").value.trim();
+      if (!code) return alert("Masukkan ID tiket!");
+      checkTicket(code);
+    }
 
-// Mode Switching
-function startScannerMode(){
-  document.getElementById("modeSelection").style.display="none";
-  document.getElementById("scannerSection").style.display="block";
-  html5QrCode=new Html5Qrcode("reader");
-  html5QrCode.start({facingMode:"environment"},{fps:10,qrbox:250},onScanSuccess)
-  .catch(err=>{ console.error(err); alert("Tidak bisa mengakses kamera"); });
-}
-function startManualMode(){
-  document.getElementById("modeSelection").style.display="none";
-  document.getElementById("manualSection").style.display="block";
-  document.getElementById("barcodeInput").focus();
-}
+    function backToMenu() {
+      document.getElementById("modeSelection").classList.remove("hidden");
+      document.getElementById("scannerSection").classList.add("hidden");
+      document.getElementById("manualSection").classList.add("hidden");
+    }
 
-// Handle Manual Check-In
-function processManualCode(){
-  let code=document.getElementById("barcodeInput").value.trim();
-  if(!code){ alert("Masukkan kode!"); return;}
-  updateProcessing(true,true);
-  fetchCheckIn(code);
-}
+    function checkTicket(ticketId) {
+      showModal("info","Memproses...","Sedang mengecek tiket ID: " + ticketId);
 
-// Scan Callback
-function onScanSuccess(decodedText,decodedResult){
-  updateProcessing(true);
-  html5QrCode.stop().then(()=>{ fetchCheckIn(decodedText); });
-}
+      fetch(`${SHEET_API}?id=${encodeURIComponent(ticketId)}`)
+        .then(res => res.json())
+        .then(res => {
+          if (res.status === "success") {
+            showModal("success", "✅ Tiket Valid", `${res.data.nama} - ${res.data.jenis_tiket}`);
+          } else if (res.status === "warning") {
+            showModal("warning", "⚠️ Sudah Check-in", `${res.data.nama} - ${res.data.jenis_tiket}`);
+          } else {
+            showModal("error", "❌ Tidak Valid", res.message || "Tiket tidak ditemukan");
+          }
+        })
+        .catch(err => {
+          showModal("error", "❌ Error", err.message);
+        });
+    }
 
-// Fetch Check-In from GAS
-function fetchCheckIn(code){
-  fetch(`${SHEET_API}?code=${code}`)
-  .then(res=>res.json())
-  .then(data=>{
-    updateProcessing(false); document.getElementById("barcodeInput").value="";
-    if(data.status==="valid") showModal("success","Check-In Berhasil",`Nama: ${data.name}\nTiket: ${data.ticket}\nWaktu: ${data.checkInTime}`);
-    else if(data.status==="used") showModal("warning","Sudah Check-In",`Nama: ${data.name}\nTiket: ${data.ticket}\nWaktu: ${data.checkInTime}`);
-    else showModal("error","Kode Tidak Valid","Kode tidak ditemukan atau tidak valid");
+    function showModal(type, title, message){
+      const modal=document.getElementById("resultModal");
+      const content=document.getElementById("modalContent");
+      const icon=document.getElementById("modalIcon");
+      const modalTitle=document.getElementById("modalTitle");
+      const modalMessage=document.getElementById("modalMessage");
 
-    // Update history table
-    updateHistoryTable(data);
-  })
-  .catch(err=>{
-    updateProcessing(false);
-    showModal("error","Gagal Terhubung","Tidak dapat menghubungi server.");
-    console.error(err);
-  });
-}
+      modalTitle.innerText=title;
+      modalMessage.innerText=message;
+      content.className="modal-content";
 
-// Update History
-function updateHistoryTable(data){
-  if(!data.name) return;
-  const tbody=document.querySelector("#historyTable tbody");
-  const tr=document.createElement("tr");
-  tr.innerHTML=`<td>${++historyCount}</td><td>${data.code}</td><td>${data.name}</td><td>${data.ticket}</td><td>${data.checkInTime}</td>`;
-  tr.classList.add("highlight");
-  tbody.prepend(tr);
-  setTimeout(()=>{ tr.classList.remove("highlight"); },2000);
-}
+      if(type==="success"){ content.classList.add("success"); icon.innerText="✅"; beepValid.play();}
+      else if(type==="warning"){ content.classList.add("warning"); icon.innerText="⚠"; beepUsed.play();}
+      else if(type==="error"){ content.classList.add("error"); icon.innerText="❌"; beepInvalid.play();}
+      else { icon.innerText="⏳"; }
 
-// Auto-refresh History
-function refreshHistory(){
-  fetch(`${SHEET_API}?all=true`)
-  .then(res=>res.json())
-  .then(data=>{
-    const tbody=document.querySelector("#historyTable tbody");
-    tbody.innerHTML="";
-    historyCount=0;
-    data.forEach(item=>{
-      const tr=document.createElement("tr");
-      tr.innerHTML=`<td>${++historyCount}</td><td>${item.code}</td><td>${item.name}</td><td>${item.ticket}</td><td>${item.checkInTime}</td>`;
-      if(!lastHistoryIds.includes(item.code)) tr.classList.add("highlight");
-      tbody.appendChild(tr);
-    });
-    lastHistoryIds=data.map(d=>d.code);
-  })
-  .catch(err=>console.error(err));
-}
-setInterval(refreshHistory,10000); // refresh tiap 10 detik
-refreshHistory(); // pertama kali
-</script>
+      modal.style.display="flex";
+    }
 
+    function closeModal(){
+      document.getElementById("resultModal").style.display="none";
+      backToMenu();
+    }
+
+    // Load History
+    function loadHistory(){
+      const tbody=document.getElementById("historyTable");
+      tbody.innerHTML="<tr><td colspan='4'>⏳ Memuat data...</td></tr>";
+
+      fetch(`${SHEET_API}?history=1`)
+        .then(res=>res.json())
+        .then(res=>{
+          if(res.status==="success" && Array.isArray(res.data)){
+            if(res.data.length===0){
+              tbody.innerHTML="<tr><td colspan='4'>Belum ada check-in</td></tr>";
+              return;
+            }
+            tbody.innerHTML=res.data.map(row=>`
+              <tr>
+                <td>${row.kode_pesanan}</td>
+                <td>${row.nama}</td>
+                <td>${row.jenis_tiket}</td>
+                <td>${row.waktu_checkin}</td>
+              </tr>`).join("");
+          } else {
+            tbody.innerHTML="<tr><td colspan='4'>Gagal memuat data</td></tr>";
+          }
+        })
+        .catch(err=>{
+          tbody.innerHTML="<tr><td colspan='4'>Error: "+err.message+"</td></tr>";
+        });
+    }
+  </script>
 </body>
 </html>
