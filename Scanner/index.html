@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Scanner Tiket Profesional + Live History</title>
+<title>Scanner Tiket + Live History Auto-Refresh</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 body { margin:0; padding:0; font-family:'Rajdhani', sans-serif; background:#121212; color:#fff; text-align:center; overflow-x:hidden; }
@@ -96,6 +96,7 @@ const beepValid=document.getElementById("beepValid");
 const beepInvalid=document.getElementById("beepInvalid");
 const beepUsed=document.getElementById("beepUsed");
 let modalTimer, autoCloseEnabled=true, html5QrCode, historyCount=0;
+let lastHistoryIds=[];
 
 // Modal Functions
 function showModal(type,title,message){
@@ -130,7 +131,6 @@ function closeModal(){
   const modal=document.getElementById("resultModal");
   modal.style.display="none";
   autoCloseEnabled=true;
-  // Kembali ke scanner otomatis
   if(document.getElementById("scannerSection").style.display==="block") startScannerMode();
 }
 
@@ -146,9 +146,8 @@ function startScannerMode(){
   document.getElementById("scannerSection").style.display="block";
   html5QrCode=new Html5Qrcode("reader");
   html5QrCode.start({facingMode:"environment"},{fps:10,qrbox:250},onScanSuccess)
-  .catch(err=>{ updateProcessing(false); showModal("error","Kamera Tidak Bisa Diakses","Pastikan perangkat memiliki kamera dan izinkan akses."); });
+  .catch(err=>{ console.error(err); alert("Tidak bisa mengakses kamera"); });
 }
-
 function startManualMode(){
   document.getElementById("modeSelection").style.display="none";
   document.getElementById("manualSection").style.display="block";
@@ -199,6 +198,28 @@ function updateHistoryTable(data){
   tbody.prepend(tr);
   setTimeout(()=>{ tr.classList.remove("highlight"); },2000);
 }
+
+// Auto-refresh History
+function refreshHistory(){
+  fetch(`${SHEET_API}?all=true`)
+  .then(res=>res.json())
+  .then(data=>{
+    const tbody=document.querySelector("#historyTable tbody");
+    tbody.innerHTML="";
+    historyCount=0;
+    data.forEach(item=>{
+      const tr=document.createElement("tr");
+      tr.innerHTML=`<td>${++historyCount}</td><td>${item.code}</td><td>${item.name}</td><td>${item.ticket}</td><td>${item.checkInTime}</td>`;
+      if(!lastHistoryIds.includes(item.code)) tr.classList.add("highlight");
+      tbody.appendChild(tr);
+    });
+    lastHistoryIds=data.map(d=>d.code);
+  })
+  .catch(err=>console.error(err));
+}
+setInterval(refreshHistory,10000); // refresh tiap 10 detik
+refreshHistory(); // pertama kali
 </script>
+
 </body>
 </html>
