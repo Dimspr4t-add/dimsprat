@@ -281,12 +281,18 @@ function playSound(type){
 function formatWIB(dateString){
   try{
     const date = new Date(dateString);
-    const options = {
+    const optionsDate = { 
       timeZone: "Asia/Jakarta",
-      year: "numeric", month: "long", day: "numeric",
-      hour: "2-digit", minute: "2-digit", second: "2-digit"
+      day: "numeric", month: "long", year: "numeric"
     };
-    return new Intl.DateTimeFormat("id-ID", options).format(date) + " WIB";
+    const optionsTime = { 
+      timeZone: "Asia/Jakarta",
+      hour: "2-digit", minute: "2-digit", second: "2-digit",
+      hour12: false 
+    };
+    const tanggal = new Intl.DateTimeFormat("id-ID", optionsDate).format(date);
+    const jam = new Intl.DateTimeFormat("id-ID", optionsTime).format(date).replace(/:/g,".");
+    return `${jam} WIB ${tanggal}`;
   }catch(e){
     return dateString;
   }
