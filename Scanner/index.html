@@ -3,74 +3,55 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Scanner Tiket</title>
+<title>Scanner Tiket Profesional</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-  body { font-family: Arial, sans-serif; text-align: center; background: #121212; color: #fff; margin:0; padding:0;}
-  #reader { width: 300px; margin: 30px auto; }
-  #processing { display: none; margin-top: 15px; font-weight: bold; color: #00f; }
+body { margin:0; padding:0; font-family:'Rajdhani', sans-serif; background:#121212; color:#fff; text-align:center;}
+h2 { margin:20px 0; color:#00bfff; }
 
-  /* Modal */
-  .modal {
-    display: none; 
-    position: fixed; 
-    z-index: 1000; 
-    left:0; top:0; 
-    width:100%; height:100%; 
-    background: rgba(0,0,0,0.7); 
-    justify-content: center; align-items: center;
-  }
+#reader { width:320px; margin:30px auto;}
+#processing { display:none; margin-top:15px; font-weight:bold; color:#00f;}
 
-  .modal-content {
-    background: #1e1e1e; 
-    padding: 30px; 
-    border-radius: 15px; 
-    width: 90%; max-width: 400px; 
-    text-align: center; 
-    animation: fadeIn 0.3s ease;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
-    position: relative;
-  }
+.modal { display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter:blur(5px); justify-content:center; align-items:center; }
+.modal-content { background:#1e1e1e; padding:30px 20px; border-radius:15px; width:90%; max-width:400px; text-align:center; box-shadow:0 8px 25px rgba(0,0,0,0.7); position:relative; animation:fadeIn 0.3s ease; }
+.modal h1 { font-size:3rem; margin:0; }
+.modal h3 { margin:10px 0; font-size:1.5rem; }
+.modal p { margin:10px 0; line-height:1.5; color:#ddd; white-space:pre-line; }
+.modal button { margin-top:15px; padding:10px 25px; font-weight:bold; border:none; border-radius:8px; cursor:pointer; transition:0.2s; font-family:'Orbitron', sans-serif; }
+.modal button:hover { opacity:0.9; }
 
-  .modal h3 { margin-bottom: 15px; font-size: 1.5rem; }
-  .modal p { margin-bottom: 20px; line-height: 1.5; }
+.success h1 { color:#0f0; }
+.success h3 { color:#0f0; }
+.success button { background:#0f0; color:#000; }
 
-  .modal button {
-    padding: 10px 20px; 
-    background: #00bfff; 
-    color: #000; 
-    border: none; 
-    border-radius: 8px; 
-    cursor: pointer; 
-    font-weight: bold; 
-    transition: 0.2s;
-  }
+.warning h1 { color:#ffa500; }
+.warning h3 { color:#ffa500; }
+.warning button { background:#ffa500; color:#000; }
 
-  .modal button:hover { background: #009acd; }
+.error h1 { color:#f00; }
+.error h3 { color:#f00; }
+.error button { background:#f00; color:#fff; }
 
-  .success { border: 3px solid #0f0; color: #0f0; }
-  .error { border: 3px solid #f00; color: #f00; }
-  .warning { border: 3px solid #ffa500; color: #ffa500; }
+@keyframes fadeIn { from{opacity:0; transform:scale(0.9);} to{opacity:1; transform:scale(1);} }
 
-  @keyframes fadeIn { from {opacity:0; transform: scale(0.9);} to {opacity:1; transform: scale(1);} }
+#countdown { font-size:0.9rem; margin-top:5px; color:#ccc; }
 
-  @media(max-width: 480px) {
-    .modal-content { padding: 20px; }
-    .modal h3 { font-size: 1.2rem; }
-  }
 </style>
 <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
 <body>
 
-<h2>📷 Scanner Tiket Check-In</h2>
+<h2>📷 Scanner Tiket Check-In Profesional</h2>
 <div id="reader"></div>
 <div id="processing">🔄 Memproses...</div>
 
 <!-- Modal -->
 <div id="resultModal" class="modal">
   <div id="modalContent" class="modal-content">
-    <h3 id="modalTitle"></h3>
-    <p id="modalMessage"></p>
+    <h1 id="modalIcon">❌</h1>
+    <h3 id="modalTitle">Judul</h3>
+    <p id="modalMessage">Pesan</p>
+    <div id="countdown"></div>
     <button onclick="closeModal()">Tutup</button>
   </div>
 </div>
@@ -81,60 +62,71 @@
 <audio id="beepUsed" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
 
 <script>
-  const SHEET_API = "https://script.google.com/macros/s/AKfycby_KZar7ssIv9wK5CRHUe0t-VoKmfgf-ihUHNvjIMH1O2R4zZWQeDDI_ETt2v54fGE/exec"; // Ganti URL GAS
+const SHEET_API = "https://script.google.com/macros/s/AKfycby_KZar7ssIv9wK5CRHUe0t-VoKmfgf-ihUHNvjIMH1O2R4zZWQeDDI_ETt2v54fGE/exec"; // Ganti GAS Web App
 
-  const beepValid = document.getElementById("beepValid");
-  const beepInvalid = document.getElementById("beepInvalid");
-  const beepUsed = document.getElementById("beepUsed");
+const beepValid = document.getElementById("beepValid");
+const beepInvalid = document.getElementById("beepInvalid");
+const beepUsed = document.getElementById("beepUsed");
 
-  function showModal(type, title, message) {
-    const modal = document.getElementById("resultModal");
-    const modalContent = document.getElementById("modalContent");
-    document.getElementById("modalTitle").innerText = title;
-    document.getElementById("modalMessage").innerText = message;
+let modalTimer;
 
-    modalContent.className = "modal-content"; // reset
-    if(type==="success"){ modalContent.classList.add("success"); beepValid.play(); }
-    else if(type==="warning"){ modalContent.classList.add("warning"); beepUsed.play(); }
-    else { modalContent.classList.add("error"); beepInvalid.play(); }
+function showModal(type, title, message) {
+  const modal = document.getElementById("resultModal");
+  const content = document.getElementById("modalContent");
+  const icon = document.getElementById("modalIcon");
+  const modalTitle = document.getElementById("modalTitle");
+  const modalMessage = document.getElementById("modalMessage");
+  const countdown = document.getElementById("countdown");
 
-    modal.style.display="flex";
+  modalTitle.innerText = title;
+  modalMessage.innerText = message;
 
-    // Auto-close modal 3 detik
-    setTimeout(closeModal, 3000);
-  }
+  content.className="modal-content"; // reset
+  countdown.innerText="";
 
-  function closeModal(){
-    document.getElementById("resultModal").style.display="none";
-  }
+  if(type==="success"){ content.classList.add("success"); icon.innerText="✅"; beepValid.play();}
+  else if(type==="warning"){ content.classList.add("warning"); icon.innerText="⚠"; beepUsed.play();}
+  else{ content.classList.add("error"); icon.innerText="❌"; beepInvalid.play(); }
 
-  function updateProcessing(show){
-    document.getElementById("processing").style.display = show ? "block" : "none";
-  }
+  modal.style.display="flex";
 
-  function onScanSuccess(decodedText, decodedResult){
-    updateProcessing(true);
-    fetch(`${SHEET_API}?code=${encodeURIComponent(decodedText)}`)
-      .then(res=>res.json())
-      .then(data=>{
-        updateProcessing(false);
-        if(data.valid){
-          showModal("success","✅ Tiket Valid", `Nama: ${data.nama}\nTiket: ${data.ticket || '-'}`);
-        } else if(data.message && data.message.includes("dipakai")){
-          showModal("warning","⚠️ Tiket Sudah Terpakai", data.message);
-        } else {
-          showModal("error","❌ Tiket Tidak Valid", data.message || "Kode tidak ditemukan");
-        }
-      })
-      .catch(err=>{
-        updateProcessing(false);
-        showModal("error","❌ Error","Gagal menghubungkan ke server");
-      });
-  }
+  // Auto-close modal 3 detik
+  let timeLeft=3;
+  countdown.innerText=`Menutup dalam ${timeLeft} detik...`;
+  clearInterval(modalTimer);
+  modalTimer=setInterval(()=>{
+    timeLeft--;
+    if(timeLeft>0) countdown.innerText=`Menutup dalam ${timeLeft} detik...`;
+    else closeModal();
+  },1000);
+}
 
-  const html5QrCode = new Html5Qrcode("reader");
-  html5QrCode.start({facingMode:"environment"},{fps:10,qrbox:250},onScanSuccess)
-    .catch(err=>{ updateProcessing(false); showModal("error","❌ Kamera Tidak Bisa Diakses","Pastikan perangkat memiliki kamera dan izinkan akses."); });
+function closeModal(){
+  clearInterval(modalTimer);
+  document.getElementById("resultModal").style.display="none";
+}
+
+function updateProcessing(show){ document.getElementById("processing").style.display = show ? "block" : "none"; }
+
+function onScanSuccess(decodedText, decodedResult){
+  updateProcessing(true);
+  fetch(`${SHEET_API}?code=${encodeURIComponent(decodedText)}`)
+    .then(res=>res.json())
+    .then(data=>{
+      updateProcessing(false);
+      if(data.valid) showModal("success","Tiket Valid", `Nama: ${data.nama}\nTiket: ${data.ticket||'-'}`);
+      else if(data.message && data.message.includes("dipakai")) showModal("warning","Tiket Sudah Terpakai", data.message);
+      else showModal("error","Tiket Tidak Valid", data.message||"Kode tidak ditemukan");
+    })
+    .catch(err=>{
+      updateProcessing(false);
+      showModal("error","Error","Gagal menghubungkan ke server");
+    });
+}
+
+const html5QrCode = new Html5Qrcode("reader");
+html5QrCode.start({facingMode:"environment"},{fps:10,qrbox:250},onScanSuccess)
+.catch(err=>{ updateProcessing(false); showModal("error","Kamera Tidak Bisa Diakses","Pastikan perangkat memiliki kamera dan izinkan akses."); });
 </script>
 
 </body>
