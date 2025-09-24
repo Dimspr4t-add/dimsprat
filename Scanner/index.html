@@ -1,277 +1,342 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Check-in Tiket</title>
-  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-  <style>
-    body {
-      font-family: "Rajdhani", sans-serif;
-      background: #111;
-      color: #fff;
-      margin: 0;
-    }
-    header {
-      background: #222;
-      padding: 10px 15px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    header h1 { margin: 0; font-size: 18px; }
-    nav button {
-      background: #333;
-      border: none;
-      color: #fff;
-      padding: 8px 12px;
-      margin-left: 5px;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    nav button.active { background: #e50914; }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Check-In Scanner — Full</title>
 
-    main { padding: 20px; }
-    .btn {
-      background: #e50914;
-      border: none;
-      color: #fff;
-      padding: 10px 16px;
-      margin: 6px;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    .btn:hover { background: #b20710; }
-    .hidden { display: none; }
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
-    /* Modal */
-    .modal {
-      position: fixed; top:0; left:0;
-      width:100%; height:100%;
-      display:none; justify-content:center; align-items:center;
-      background: rgba(0,0,0,0.8);
-      z-index: 1000;
-    }
-    .modal-content {
-      background:#222; padding:20px; border-radius:10px;
-      max-width:400px; text-align:center;
-    }
-    .modal-content.success { border:2px solid #4caf50; }
-    .modal-content.warning { border:2px solid #ff9800; }
-    .modal-content.error { border:2px solid #f44336; }
+<style>
+  :root{
+    --bg:#0f1113; --card:#15171a; --accent:#ff2d2d; --muted:#9aa0a6; --success:#27ae60; --warn:#f39c12; --danger:#e74c3c;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Rajdhani',sans-serif;background:var(--bg);color:#fff;min-height:100vh;display:flex;flex-direction:column}
+  header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:linear-gradient(90deg,#0b0c0d,#141516)}
+  header h1{font-size:18px;margin:0;font-family:'Orbitron',sans-serif}
+  nav{display:flex;gap:8px}
+  nav button{background:transparent;border:1px solid #222;color:#fff;padding:8px 12px;border-radius:8px;cursor:pointer}
+  nav button.active{background:var(--accent);border-color:var(--accent);box-shadow:0 6px 20px rgba(255,45,45,0.12)}
 
-    /* Table */
-    table {
-      width:100%; border-collapse: collapse; margin-top:10px;
-    }
-    table th, table td {
-      border:1px solid #444; padding:8px; text-align:left;
-    }
-    table th { background:#222; }
-  </style>
+  main{flex:1;padding:20px;display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;justify-content:center}
+  .panel{background:var(--card);padding:18px;border-radius:12px;min-width:320px;max-width:980px;width:100%;box-shadow:0 8px 30px rgba(0,0,0,0.6)}
+  .center{display:flex;flex-direction:column;align-items:center;gap:12px}
+
+  /* Mode selection */
+  .mode-buttons{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+  .btn{background:var(--accent);border:none;padding:12px 18px;border-radius:10px;color:#fff;cursor:pointer;font-weight:700}
+  .btn.secondary{background:transparent;border:1px solid #2b2b2b;color:var(--muted)}
+  .btn.ghost{background:transparent;border:1px dashed #2b2b2b;color:var(--muted)}
+
+  /* Scanner area */
+  #reader {width:320px;margin:0 auto}
+  .processing{display:flex;align-items:center;gap:10px;color:var(--muted);margin-top:8px}
+  .spinner{width:28px;height:28px;border-radius:50%;border:3px solid rgba(255,255,255,0.08);border-top-color:var(--accent);animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* Modal */
+  .modal{display:none;position:fixed;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0.7),rgba(0,0,0,0.8));backdrop-filter:blur(6px);align-items:center;justify-content:center;z-index:999}
+  .modal.show{display:flex}
+  .modal-card{background:linear-gradient(180deg,#0f1214,#151617);padding:22px;border-radius:14px;min-width:300px;max-width:420px;text-align:center;box-shadow:0 14px 38px rgba(0,0,0,0.6)}
+  .modal-card h1{font-size:48px;margin:0}
+  .modal-card h3{margin:12px 0 8px;font-size:20px}
+  .modal-card p{margin:0;color:var(--muted);white-space:pre-line}
+  .modal-card .actions{display:flex;gap:10px;justify-content:center;margin-top:16px}
+  .chip{display:inline-block;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.03);color:var(--muted);font-size:13px;margin-top:10px}
+
+  /* Table (history) */
+  table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}
+  th,td{padding:10px;border-bottom:1px solid rgba(255,255,255,0.04);text-align:left}
+  th{color:var(--muted);font-weight:600;font-size:13px}
+  tbody tr:hover td{background:rgba(255,255,255,0.01)}
+
+  /* Responsive */
+  @media(max-width:720px){
+    main{padding:12px}
+    .panel{padding:14px}
+  }
+</style>
 </head>
 <body>
 
-  <header>
-    <h1>🎟️ Sistem Check-in</h1>
-    <nav>
-      <button id="tabScanner" class="active" onclick="showPage('scannerPage')">Scanner</button>
-      <button id="tabHistory" onclick="showPage('historyPage')">Histori</button>
-    </nav>
-  </header>
+<header>
+  <h1>🎟️ Check-In Scanner</h1>
+  <nav>
+    <button id="tabScanner" class="active" onclick="showPage('scanner')">Scanner</button>
+    <button id="tabHistory" onclick="showPage('history')">Histori</button>
+  </nav>
+</header>
 
-  <main>
-    <!-- Scanner Page -->
-    <section id="scannerPage">
-      <div id="modeSelection">
-        <button class="btn" onclick="startScanner()">📷 Scan QR Code</button>
-        <button class="btn" onclick="showManual()">⌨️ Input Kode Manual</button>
+<main>
+  <!-- SCANNER PANEL -->
+  <section id="scanner" class="panel center">
+    <div style="max-width:640px;width:100%;">
+      <h2 style="margin:0 0 8px;font-size:18px">Mode</h2>
+      <div class="mode-buttons" id="modeSelection">
+        <button class="btn" onclick="enterCameraMode()">📷 Scan QR</button>
+        <button class="btn secondary" onclick="enterManualMode()">⌨️ Input Manual</button>
       </div>
 
-      <div id="scannerSection" class="hidden">
-        <div id="reader" style="width:300px; margin:auto;"></div>
-        <button class="btn" onclick="stopScanner()">⬅ Kembali</button>
+      <!-- camera area -->
+      <div id="cameraArea" style="display:none;margin-top:14px;" class="center">
+        <div id="reader"></div>
+        <div class="processing" id="procCamera" style="display:none"><div class="spinner"></div><div>Memproses...</div></div>
+        <div style="margin-top:12px;">
+          <button class="btn ghost" onclick="stopScanner()">Stop Camera</button>
+        </div>
       </div>
 
-      <div id="manualSection" class="hidden">
-        <input type="text" id="manualCode" placeholder="Masukkan ID Tiket" style="padding:10px;width:250px;">
-        <br>
-        <button class="btn" onclick="submitManual()">✅ Check</button>
-        <button class="btn" onclick="backToMenu()">⬅ Kembali</button>
-      </div>
-    </section>
-
-    <!-- History Page -->
-    <section id="historyPage" class="hidden">
-      <h2>📑 Histori Check-in</h2>
-      <button class="btn" onclick="loadHistory()">🔄 Refresh</button>
-      <table>
-        <thead>
-          <tr>
-            <th>Kode Pesanan</th>
-            <th>Nama</th>
-            <th>Jenis Tiket</th>
-            <th>Waktu Check-in</th>
-          </tr>
-        </thead>
-        <tbody id="historyTable">
-          <tr><td colspan="4">Klik refresh untuk memuat data...</td></tr>
-        </tbody>
-      </table>
-    </section>
-  </main>
-
-  <!-- Modal -->
-  <div id="resultModal" class="modal">
-    <div id="modalContent" class="modal-content">
-      <h1 id="modalIcon">❌</h1>
-      <h3 id="modalTitle">Judul</h3>
-      <p id="modalMessage">Pesan</p>
-      <div style="margin-top:15px;">
-        <button onclick="closeModal()">Tutup</button>
+      <!-- manual area -->
+      <div id="manualArea" style="display:none;margin-top:14px;" class="center">
+        <input id="manualInput" type="text" placeholder="Masukkan ID tiket / Kode QR" style="padding:12px;border-radius:10px;border:1px solid #222;width:100%;max-width:420px;background:#0b0c0d;color:#fff">
+        <div style="margin-top:12px;">
+          <button class="btn" onclick="submitManual()">Check-In</button>
+          <button class="btn secondary" onclick="backToMode()">Batal</button>
+        </div>
+        <div class="processing" id="procManual" style="display:none"><div class="spinner"></div><div>Memproses...</div></div>
       </div>
     </div>
+  </section>
+
+  <!-- HISTORY PANEL -->
+  <section id="history" class="panel" style="display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h2 style="margin:0;font-size:18px">Histori Check-in</h2>
+      <div>
+        <button class="btn" onclick="loadHistory()">🔄 Refresh</button>
+        <button class="btn secondary" onclick="exportCSV()">⬇ Export CSV</button>
+      </div>
+    </div>
+
+    <div style="margin-top:12px;overflow:auto">
+      <table>
+        <thead><tr><th>Timestamp</th><th>Kode Pesanan</th><th>Nama</th><th>Jenis Tiket</th><th>Status</th></tr></thead>
+        <tbody id="historyBody"><tr><td colspan="5">Klik Refresh untuk memuat histori...</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<!-- Modal (no auto-close) -->
+<div id="resultModal" class="modal">
+  <div class="modal-card" id="modalCard">
+    <h1 id="modalIcon">❌</h1>
+    <h3 id="modalTitle">Judul</h3>
+    <p id="modalMessage">Pesan</p>
+    <div class="chip" id="modalSub"></div>
+    <div class="actions">
+      <button class="btn secondary" onclick="closeModal()">Tutup</button>
+    </div>
   </div>
+</div>
 
-  <script>
-    const SHEET_API = "https://script.google.com/macros/s/AKfycby_KZar7ssIv9wK5CRHUe0t-VoKmfgf-ihUHNvjIMH1O2R4zZWQeDDI_ETt2v54fGE/exec"; // ganti dengan URL Web App GAS kamu
-    let html5QrCode;
+<!-- Audio -->
+<audio id="sndValid" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" preload="auto"></audio>
+<audio id="sndUsed" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
+<audio id="sndInvalid" src="https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg" preload="auto"></audio>
 
-    // Suara
-    const beepValid = new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
-    const beepUsed = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
-    const beepInvalid = new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg");
+<script>
+/* ==== CONFIG: ganti URL WEBAPP GAS di bawah ==== */
+const SHEET_API = "https://script.google.com/macros/s/AKfycby_KZar7ssIv9wK5CRHUe0t-VoKmfgf-ihUHNvjIMH1O2R4zZWQeDDI_ETt2v54fGE/exec"; // contoh: https://script.google.com/macros/s/AKfycbXXXX/exec
+/* ============================================== */
 
-    // Tab Navigation
-    function showPage(pageId){
-      document.getElementById("scannerPage").classList.add("hidden");
-      document.getElementById("historyPage").classList.add("hidden");
-      document.getElementById(pageId).classList.remove("hidden");
+let qrScanner = null;
+const sndValid = document.getElementById('sndValid');
+const sndUsed = document.getElementById('sndUsed');
+const sndInvalid = document.getElementById('sndInvalid');
 
-      document.getElementById("tabScanner").classList.remove("active");
-      document.getElementById("tabHistory").classList.remove("active");
-      if(pageId==="scannerPage") document.getElementById("tabScanner").classList.add("active");
-      else document.getElementById("tabHistory").classList.add("active");
+/* ---------- Page switching ---------- */
+function showPage(page){
+  document.getElementById('scanner').style.display = page==='scanner' ? 'block' : 'none';
+  document.getElementById('history').style.display = page==='history' ? 'block' : 'none';
+  document.getElementById('tabScanner').classList.toggle('active', page==='scanner');
+  document.getElementById('tabHistory').classList.toggle('active', page==='history');
+  if(page==='history') loadHistory();
+}
+window.showPage = showPage;
 
-      if(pageId==="historyPage"){ loadHistory(); }
-    }
+/* ---------- Modes ---------- */
+function enterCameraMode(){
+  document.getElementById('modeSelection').style.display = 'none';
+  document.getElementById('cameraArea').style.display = 'block';
+  startScanner();
+}
+function enterManualMode(){
+  document.getElementById('modeSelection').style.display = 'none';
+  document.getElementById('manualArea').style.display = 'block';
+  document.getElementById('manualInput').focus();
+}
+function backToMode(){
+  stopScanner();
+  document.getElementById('modeSelection').style.display = 'flex';
+  document.getElementById('cameraArea').style.display = 'none';
+  document.getElementById('manualArea').style.display = 'none';
+  document.getElementById('manualInput').value = '';
+}
 
-    // Scanner
-    function startScanner() {
-      document.getElementById("modeSelection").classList.add("hidden");
-      document.getElementById("scannerSection").classList.remove("hidden");
-
-      html5QrCode = new Html5Qrcode("reader");
-      html5QrCode.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: 250 },
-        qrCodeMessage => {
-          stopScanner();
-          checkTicket(qrCodeMessage);
-        }
-      ).catch(err => {
-        alert("Gagal akses kamera: " + err);
-        backToMenu();
-      });
-    }
-
-    function stopScanner() {
-      if (html5QrCode) {
-        html5QrCode.stop().catch(()=>{});
-        html5QrCode.clear();
+/* ---------- Scanner (html5-qrcode) ---------- */
+async function startScanner(){
+  const reader = document.getElementById('reader');
+  document.getElementById('procCamera').style.display = 'none';
+  qrScanner = new Html5Qrcode("reader");
+  try {
+    await qrScanner.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: {width:260,height:260} },
+      qrMessage => {
+        // saat QR terbaca → hentikan scanner, proses
+        stopScanner();
+        validateCode(qrMessage);
       }
-      backToMenu();
+    );
+  } catch (err) {
+    alert('Gagal akses kamera: ' + err);
+    backToMode();
+  }
+}
+function stopScanner(){
+  if(qrScanner){
+    qrScanner.stop().then(()=>qrScanner.clear()).catch(()=>{});
+    qrScanner = null;
+  }
+}
+
+/* ---------- Manual submit ---------- */
+function submitManual(){
+  const code = document.getElementById('manualInput').value.trim();
+  if(!code) return alert('Masukkan kode tiket!');
+  validateCode(code);
+}
+
+/* ---------- Validate (call GAS) ---------- */
+function validateCode(code){
+  // show processing in both modes
+  document.getElementById('procCamera').style.display = 'block';
+  document.getElementById('procManual').style.display = 'block';
+
+  // call: ?action=validate&code=...
+  fetch(`${SHEET_API}?action=validate&code=${encodeURIComponent(code)}`)
+    .then(r=>r.json())
+    .then(res=>{
+      document.getElementById('procCamera').style.display = 'none';
+      document.getElementById('procManual').style.display = 'none';
+
+      if(res.status === 'success'){
+        playSound('valid');
+        showResultModal('success','✅ Check-in Berhasil', `Nama: ${res.data.nama}\nJenis: ${res.data.jenis_tiket}\nOrder: ${res.data.kode_pesanan}`);
+      } else if(res.status === 'warning'){
+        playSound('used');
+        showResultModal('warning','⚠️ Sudah Check-in', `Nama: ${res.data.nama}\nJenis: ${res.data.jenis_tiket}\nWaktu: ${res.data.waktu_checkin || '-'}`);
+      } else {
+        playSound('invalid');
+        showResultModal('error','❌ Gagal', res.message || 'Tiket tidak valid');
+      }
+    })
+    .catch(err=>{
+      document.getElementById('procCamera').style.display = 'none';
+      document.getElementById('procManual').style.display = 'none';
+      playSound('invalid');
+      showResultModal('error','❌ Error', 'Gagal menghubungkan ke server: ' + err.message);
+    });
+}
+
+/* ---------- Modal (no auto-close) ---------- */
+function showResultModal(type,title,msg){
+  const modal = document.getElementById('resultModal');
+  const card = document.getElementById('modalCard');
+  const icon = document.getElementById('modalIcon');
+  const t = document.getElementById('modalTitle');
+  const m = document.getElementById('modalMessage');
+  const sub = document.getElementById('modalSub');
+
+  t.innerText = title; m.innerText = msg;
+  sub.innerText = new Date().toLocaleString(); // show time
+  card.className = 'modal-card';
+  if(type==='success'){ icon.innerText='✅'; card.style.border=`2px solid ${getComputedStyle(document.documentElement).getPropertyValue('--success') || '#27ae60'}`; }
+  else if(type==='warning'){ icon.innerText='⚠'; card.style.border=`2px solid ${getComputedStyle(document.documentElement).getPropertyValue('--warn') || '#f39c12'}`; }
+  else { icon.innerText='❌'; card.style.border=`2px solid ${getComputedStyle(document.documentElement).getPropertyValue('--danger') || '#e74c3c'}`; }
+
+  modal.classList.add('show');
+}
+
+/* modal close returns to main mode selection */
+function closeModal(){
+  const modal = document.getElementById('resultModal');
+  modal.classList.remove('show');
+  backToMode();
+}
+
+/* play sound by type */
+function playSound(type){
+  try{
+    if(type==='valid') sndValid.play();
+    else if(type==='used') sndUsed.play();
+    else sndInvalid.play();
+  }catch(e){}
+}
+
+/* ---------- History ---------- */
+function loadHistory(){
+  const body = document.getElementById('historyBody');
+  body.innerHTML = `<tr><td colspan="5">⏳ Memuat...</td></tr>`;
+  fetch(`${SHEET_API}?action=history`)
+    .then(r=>r.json())
+    .then(res=>{
+      if(res.status === 'success' && res.data && Array.isArray(res.data.records)){
+        const rows = res.data.records;
+        if(rows.length === 0){
+          body.innerHTML = `<tr><td colspan="5">Belum ada histori check-in</td></tr>`;
+          return;
+        }
+        body.innerHTML = rows.reverse().map(r=>`
+          <tr>
+            <td>${escapeHtml(r['Timestamp'] || r['Timestamp'] || '')}</td>
+            <td>${escapeHtml(r['Kode Pesanan'] || r['Kode Pesanan'] || '')}</td>
+            <td>${escapeHtml(r['Nama'] || '')}</td>
+            <td>${escapeHtml(r['Jenis Tiket'] || '')}</td>
+            <td>${escapeHtml(r['Status'] || '')}</td>
+          </tr>
+        `).join('');
+      } else {
+        body.innerHTML = `<tr><td colspan="5">Gagal memuat histori</td></tr>`;
+      }
+    })
+    .catch(err=>{
+      body.innerHTML = `<tr><td colspan="5">Error: ${escapeHtml(err.message)}</td></tr>`;
+    });
+}
+
+/* Export CSV dari histori di front-end */
+function exportCSV(){
+  fetch(`${SHEET_API}?action=history`).then(r=>r.json()).then(res=>{
+    if(!(res.status==='success' && res.data && Array.isArray(res.data.records))){
+      return alert('Gagal memuat histori untuk export');
     }
+    const rows = res.data.records;
+    if(rows.length===0) return alert('Belum ada histori');
+    const header = Object.keys(rows[0]);
+    const csv = [header.join(',')].concat(rows.map(r=> header.map(h=> `"${(r[h]||'').toString().replace(/"/g,'""')}"`).join(','))).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `histori_checkin_${Date.now()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  }).catch(e=>alert('Error export: '+e.message));
+}
 
-    function showManual() {
-      document.getElementById("modeSelection").classList.add("hidden");
-      document.getElementById("manualSection").classList.remove("hidden");
-    }
+/* small helper */
+function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-    function submitManual() {
-      const code = document.getElementById("manualCode").value.trim();
-      if (!code) return alert("Masukkan ID tiket!");
-      checkTicket(code);
-    }
-
-    function backToMenu() {
-      document.getElementById("modeSelection").classList.remove("hidden");
-      document.getElementById("scannerSection").classList.add("hidden");
-      document.getElementById("manualSection").classList.add("hidden");
-    }
-
-    function checkTicket(ticketId) {
-      showModal("info","Memproses...","Sedang mengecek tiket ID: " + ticketId);
-
-      fetch(`${SHEET_API}?id=${encodeURIComponent(ticketId)}`)
-        .then(res => res.json())
-        .then(res => {
-          if (res.status === "success") {
-            showModal("success", "✅ Tiket Valid", `${res.data.nama} - ${res.data.jenis_tiket}`);
-          } else if (res.status === "warning") {
-            showModal("warning", "⚠️ Sudah Check-in", `${res.data.nama} - ${res.data.jenis_tiket}`);
-          } else {
-            showModal("error", "❌ Tidak Valid", res.message || "Tiket tidak ditemukan");
-          }
-        })
-        .catch(err => {
-          showModal("error", "❌ Error", err.message);
-        });
-    }
-
-    function showModal(type, title, message){
-      const modal=document.getElementById("resultModal");
-      const content=document.getElementById("modalContent");
-      const icon=document.getElementById("modalIcon");
-      const modalTitle=document.getElementById("modalTitle");
-      const modalMessage=document.getElementById("modalMessage");
-
-      modalTitle.innerText=title;
-      modalMessage.innerText=message;
-      content.className="modal-content";
-
-      if(type==="success"){ content.classList.add("success"); icon.innerText="✅"; beepValid.play();}
-      else if(type==="warning"){ content.classList.add("warning"); icon.innerText="⚠"; beepUsed.play();}
-      else if(type==="error"){ content.classList.add("error"); icon.innerText="❌"; beepInvalid.play();}
-      else { icon.innerText="⏳"; }
-
-      modal.style.display="flex";
-    }
-
-    function closeModal(){
-      document.getElementById("resultModal").style.display="none";
-      backToMenu();
-    }
-
-    // Load History
-    function loadHistory(){
-      const tbody=document.getElementById("historyTable");
-      tbody.innerHTML="<tr><td colspan='4'>⏳ Memuat data...</td></tr>";
-
-      fetch(`${SHEET_API}?history=1`)
-        .then(res=>res.json())
-        .then(res=>{
-          if(res.status==="success" && Array.isArray(res.data)){
-            if(res.data.length===0){
-              tbody.innerHTML="<tr><td colspan='4'>Belum ada check-in</td></tr>";
-              return;
-            }
-            tbody.innerHTML=res.data.map(row=>`
-              <tr>
-                <td>${row.kode_pesanan}</td>
-                <td>${row.nama}</td>
-                <td>${row.jenis_tiket}</td>
-                <td>${row.waktu_checkin}</td>
-              </tr>`).join("");
-          } else {
-            tbody.innerHTML="<tr><td colspan='4'>Gagal memuat data</td></tr>";
-          }
-        })
-        .catch(err=>{
-          tbody.innerHTML="<tr><td colspan='4'>Error: "+err.message+"</td></tr>";
-        });
-    }
-  </script>
+/* Keyboard: Enter submit manual, ESC close modal */
+document.addEventListener('keydown', (e)=>{
+  if(e.key==='Enter' && document.getElementById('manualArea').style.display!=='none'){
+    submitManual();
+  }
+  if(e.key==='Escape' && document.getElementById('resultModal').classList.contains('show')){
+    closeModal();
+  }
+});
+</script>
 </body>
 </html>
