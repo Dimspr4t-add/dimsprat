@@ -57,6 +57,11 @@
     main{padding:12px}
     .panel{padding:14px}
   }
+
+  /* Tambahan status badge */
+  .status-success { color:#27ae60; font-weight:600 }
+  .status-warning { color:#f39c12; font-weight:600 }
+  .status-error { color:#e74c3c; font-weight:600 }
 </style>
 </head>
 <body>
@@ -228,7 +233,7 @@ function validateCode(code){
         showResultModal('success','✅ Check-in Berhasil', `Nama: ${res.data.nama}\nJenis: ${res.data.jenis_tiket}\nOrder: ${res.data.kode_pesanan}`);
       } else if(res.status === 'warning'){
         playSound('used');
-        showResultModal('warning','⚠️ Sudah Check-in', `Nama: ${res.data.nama}\nJenis: ${res.data.jenis_tiket}\nWaktu: ${res.data.waktu_checkin || '-'}`);
+        showResultModal('warning','⚠️ Sudah Terpakai', `Nama: ${res.data.nama}\nJenis: ${res.data.jenis_tiket}\nWaktu: ${res.data.waktu_checkin || '-'}`);
       } else {
         playSound('invalid');
         showResultModal('error','❌ Gagal', res.message || 'Tiket tidak valid');
@@ -311,15 +316,21 @@ function loadHistory(){
           body.innerHTML = `<tr><td colspan="5">Belum ada histori check-in</td></tr>`;
           return;
         }
-        body.innerHTML = rows.reverse().map(r=>`
-          <tr>
-            <td>${formatWIB(r['Timestamp'] || r['Timestamp'] || '')}</td>
-            <td>${escapeHtml(r['Kode Pesanan'] || r['Kode Pesanan'] || '')}</td>
-            <td>${escapeHtml(r['Nama'] || '')}</td>
-            <td>${escapeHtml(r['Jenis Tiket'] || '')}</td>
-            <td>${escapeHtml(r['Status'] || '')}</td>
-          </tr>
-        `).join('');
+        body.innerHTML = rows.reverse().map(r=>{
+          const statusText = (r['Status'] || '').toLowerCase();
+          let statusClass = 'status-error';
+          if(statusText.includes('berhasil')) statusClass = 'status-success';
+          else if(statusText.includes('terpakai')) statusClass = 'status-warning';
+          return `
+            <tr>
+              <td>${formatWIB(r['Timestamp'] || '')}</td>
+              <td>${escapeHtml(r['Kode Pesanan'] || '')}</td>
+              <td>${escapeHtml(r['Nama'] || '')}</td>
+              <td>${escapeHtml(r['Jenis Tiket'] || '')}</td>
+              <td class="${statusClass}">${escapeHtml(r['Status'] || '')}</td>
+            </tr>
+          `;
+        }).join('');
       } else {
         body.innerHTML = `<tr><td colspan="5">Gagal memuat histori</td></tr>`;
       }
