@@ -252,7 +252,7 @@ function showResultModal(type,title,msg){
   const sub = document.getElementById('modalSub');
 
   t.innerText = title; m.innerText = msg;
-  sub.innerText = new Date().toLocaleString(); // show time
+  sub.innerText = formatWIB(new Date());
   card.className = 'modal-card';
   if(type==='success'){ icon.innerText='✅'; card.style.border=`2px solid ${getComputedStyle(document.documentElement).getPropertyValue('--success') || '#27ae60'}`; }
   else if(type==='warning'){ icon.innerText='⚠'; card.style.border=`2px solid ${getComputedStyle(document.documentElement).getPropertyValue('--warn') || '#f39c12'}`; }
@@ -277,6 +277,21 @@ function playSound(type){
   }catch(e){}
 }
 
+/* Format ke Waktu Indonesia Barat */
+function formatWIB(dateString){
+  try{
+    const date = new Date(dateString);
+    const options = {
+      timeZone: "Asia/Jakarta",
+      year: "numeric", month: "long", day: "numeric",
+      hour: "2-digit", minute: "2-digit", second: "2-digit"
+    };
+    return new Intl.DateTimeFormat("id-ID", options).format(date) + " WIB";
+  }catch(e){
+    return dateString;
+  }
+}
+
 /* ---------- History ---------- */
 function loadHistory(){
   const body = document.getElementById('historyBody');
@@ -292,7 +307,7 @@ function loadHistory(){
         }
         body.innerHTML = rows.reverse().map(r=>`
           <tr>
-            <td>${escapeHtml(r['Timestamp'] || r['Timestamp'] || '')}</td>
+            <td>${formatWIB(r['Timestamp'] || r['Timestamp'] || '')}</td>
             <td>${escapeHtml(r['Kode Pesanan'] || r['Kode Pesanan'] || '')}</td>
             <td>${escapeHtml(r['Nama'] || '')}</td>
             <td>${escapeHtml(r['Jenis Tiket'] || '')}</td>
