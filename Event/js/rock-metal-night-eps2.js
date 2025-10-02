@@ -23,7 +23,7 @@ tickets.forEach(t => {
 
 // Counter tiket
 minus.onclick = () => { if (qty > 1) { qty--; updateQty(); } };
-plus.onclick = () => { if (qty < 10) { qty++; updateQty(); } };
+plus.onclick = () => { if (qty < 5) { qty++; updateQty(); } };
 function updateQty() { qtyEl.textContent = qty; updateSummary(); }
 
 // Update ringkasan

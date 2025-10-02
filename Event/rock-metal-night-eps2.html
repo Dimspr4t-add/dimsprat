@@ -6,7 +6,7 @@
 <title>Rock & Metal Night Eps.2 - DIMSPRAT</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-<link href="https://www.dimsprat.site/style.css" rel="stylesheet">
+<link href="../Assets/style.css" rel="stylesheet">
 <style>
 
 /* --- Counter --- */
@@ -178,7 +178,7 @@ textarea { resize:none; }
 <header id="header">
   <div class="header-container">
       <a href="../index.html" class="logo-link">
-          <img src="../images/logo.png" alt="Dimsprat Logo" class="logo-img">
+          <img src="../Assets/images/logo.png" alt="Dimsprat Logo" class="logo-img">
       </a>
   </div>
 </header>
@@ -205,30 +205,38 @@ textarea { resize:none; }
 <!-- Step 1 -->
 <div class="form-step active" id="form-step1">
 <h3 style="color:#fff;text-align:center;">Pilih Jenis Tiket</h3>
-<div class="ticket-options">
-  <div class="ticket-option" data-name="TIKET ONLY" data-ticket="35000" data-drink="0">
-    <div class="ticket-info">
-    <h3>TIKET ONLY</h3>
-    <p>Berlaku hingga 04 Oktober 2025</p>
-    <p class="stock">Tersedia</p>
+<div class='ticket-options'>
+  <div class='ticket-option available' data-name='TIKET ONLY' data-ticket='35000' data-drink='0'>
+    <div class='ticket-info'>
+      <h3>TIKET ONLY</h3>
+      <p>Berlaku hingga 03 Oktober 2025</p>
+      <p class='stock'>Tersedia</p>
+    </div>
+    <div class='price'>Rp 35.000</div>
   </div>
-    <div class="price">Rp 35.000</div>
+  <div class='ticket-option sold-out' data-name='TIKET ONLY (OTS)' data-ticket='40000' data-drink='0'>
+    <div class='ticket-info'>
+      <h3>TIKET ONLY (OTS)</h3>
+      <p>Berlaku 04 Oktober 2025</p>
+      <p class='stock'>Belum Tersedia</p>
+    </div>
+    <div class='price'>Rp 40.000</div>
   </div>
-  <div class="ticket-option" data-name="TIKET + SOFT DRINK" data-ticket="35000" data-drink="25000">
-    <div class="ticket-info">
-    <h3>TIKET + SOFT DRINK</h3>
-    <p>Berlaku hingga 03 Oktober 2025</p>
-    <p class="stock">Tersedia</p>
-   </div>
-    <div class="price">Rp 60.000</div>
+  <div class='ticket-option available' data-name='TIKET + SOFT DRINK' data-ticket='35000' data-drink='25000'>
+    <div class='ticket-info'>
+      <h3>TIKET + SOFT DRINK</h3>
+      <p>Berlaku hingga 03 Oktober 2025</p>
+      <p class='stock'>Tersedia</p>
+    </div>
+    <div class='price'>Rp 60.000</div>
   </div>
-  <div class="ticket-option" data-name="TIKET + BEER" data-ticket="35000" data-drink="40000">
-    <div class="ticket-info">
-    <h3>TIKET + BEER</h3>
-    <p>Berlaku hingga 03 Oktober 2025</p>
-    <p class="stock">Tersedia</p>
-  </div>
-    <div class="price">Rp 75.000</div>
+  <div class='ticket-option available' data-name='TIKET + BEER' data-ticket='35000' data-drink='40000'>
+    <div class='ticket-info'>
+      <h3>TIKET + BEER</h3>
+      <p>Berlaku hingga 03 Oktober 2025</p>
+      <p class='stock'>Tersedia</p>
+    </div>
+    <div class='price'>Rp 75.000</div>
   </div>
 </div>
 
@@ -308,7 +316,7 @@ textarea { resize:none; }
 <div class="payment-methods">
   <div class="payment-option">
     <div class="payment-logo">
-      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/BRI_2020.svg/250px-BRI_2020.svg.png" alt="BCA">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/BRI_2020.svg/250px-BRI_2020.svg.png" alt="BRI">
     </div>
     <div class="payment-details">
       <span class="payment-name">Bank BRI</span>
@@ -323,9 +331,29 @@ textarea { resize:none; }
       </div>
     </div>
     <div class="payment-radio">
-      <input type="radio" name="payment" value="BCA">
+      <input type="radio" name="payment" value="BRI">
     </div>
   </div>
+  <!-- <div class="payment-option">
+    <div class="payment-logo">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/5/5c/Bank_Central_Asia.svg" alt="BCA">
+    </div>
+    <div class="payment-details">
+      <span class="payment-name">Bank BCA</span>
+      <div class="account-number-row">
+        <span class="payment-account">4210587042 (Gerard Frederik Laloan)</span>
+        <button type="button" class="copy-account-btn" onclick="copyAccountNumber('4210587042', this)" title="Salin nomor rekening">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 4V16C8 16.5304 8.21071 17.0391 8.58579 17.4142C8.96086 17.7893 9.46957 18 10 18H18C18.5304 18 19.0391 17.7893 19.4142 17.4142C19.7893 17.0391 20 16.5304 20 16V7.41C20 7.1573 19.9488 6.90741 19.85 6.676L16.63 0H10C9.46957 0 8.96086 0.210714 8.58579 0.585786C8.21071 0.960859 8 1.46957 8 2V4Z" fill="currentColor"></path>
+            <path d="M16 18V22C16 22.5304 15.7893 23.0391 15.4142 23.4142C15.0391 23.7893 14.5304 24 14 24H6C5.46957 24 4.96086 23.7893 4.58579 23.4142C4.21071 23.0391 4 22.5304 4 22V8C4 7.46957 4.21071 6.96086 4.58579 6.58579C4.96086 6.21071 5.46957 6 6 6H10" fill="currentColor"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="payment-radio">
+      <input type="radio" name="payment" value="BCA">
+    </div>
+  </div> -->
   <div class="payment-option">
     <div class="payment-logo">
       <img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Logo_dana_blue.svg" alt="DANA">
