@@ -320,10 +320,10 @@ function validateCode(code){
 
       if(res.status === 'success'){
         playSound('valid');
-        showResultModal('success','✅ Check-in Berhasil', `Nama: ${res.data.nama}\nJenis: ${res.data.jenis_tiket}\nOrder: ${res.data.kode_pesanan}`);
+        showResultModal('success','✅ Check-in Berhasil', `Nama: ${res.data.nama}\nJenis: ${res.data.jenis_tiket}\nJumlah: ${res.data.jumlah_tiket}\nOrder: ${res.data.kode_pesanan}`);
       } else if(res.status === 'warning'){
         playSound('used');
-        showResultModal('warning','⚠️ Sudah Terpakai', `Nama: ${res.data.nama}\nJenis: ${res.data.jenis_tiket}\nWaktu: ${res.data.waktu_checkin || '-'}`);
+        showResultModal('warning','⚠️ Sudah Terpakai', `Nama: ${res.data.nama}\nJenis: ${res.data.jenis_tiket}\nJumlah: ${res.data.jumlah_tiket}\nWaktu: ${res.data.waktu_checkin || '-'}`);
       } else {
         playSound('invalid');
         showResultModal('error','❌ Gagal', res.message || 'Tiket tidak valid');
