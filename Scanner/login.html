@@ -67,7 +67,7 @@ const LOGIN_API = "https://script.google.com/macros/s/AKfycby_KZar7ssIv9wK5CRHUe
 
 // Cek jika sudah login, langsung redirect
 if (localStorage.getItem("panitiaLogin") === "true") {
-  window.location.href = "scanner.html";
+  window.location.href = "index.html";
 }
 
 const usernameInput = document.getElementById("username");
@@ -99,7 +99,7 @@ async function login(){
       localStorage.setItem("panitiaLogin","true");
       localStorage.setItem("panitiaUser", u);
       localStorage.setItem("panitiaSession", data.sessionID);
-      window.location.href = "scanner.html";
+      window.location.href = "index.html";
     } else {
       err.textContent = data.message || "Username / Password salah.";
     }
