@@ -62,6 +62,37 @@
   .status-success { color:#27ae60; font-weight:600 }
   .status-warning { color:#f39c12; font-weight:600 }
   .status-error { color:#e74c3c; font-weight:600 }
+  
+  /* Action buttons */
+  .action-buttons {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+  }
+  .btn-approve {
+    background: #27ae60;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .btn-approve:disabled {
+    background: #7f8c8d;
+    cursor: not-allowed;
+  }
+  .btn-reject {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .btn-reject:disabled {
+    background: #7f8c8d;
+    cursor: not-allowed;
+  }
 </style>
 </head>
 <body>
@@ -71,6 +102,8 @@
   <nav>
     <button id="tabScanner" class="active" onclick="showPage('scanner')">Scanner</button>
     <button id="tabHistory" onclick="showPage('history')">Histori</button>
+    <button id="tabOts" onclick="showPage('ots')">OTS</button>
+    <button onclick="logout()">Logout</button>
   </nav>
 </header>
 
@@ -117,11 +150,41 @@
 
     <div style="margin-top:12px;overflow:auto">
       <table>
-        <thead><tr><th>Timestamp</th><th>Kode Pesanan</th><th>Nama</th><th>Jenis Tiket</th><th>Status</th></tr></thead>
-        <tbody id="historyBody"><tr><td colspan="5">Klik Refresh untuk memuat histori...</td></tr></tbody>
+        <thead><tr><th>Timestamp</th><th>Nama</th><th>Jumlah</th><th>Jenis Tiket</th><th>Status</th><th>QR Code</th><th>Kode Pesanan</th></tr></thead>
+        <tbody id="historyBody"><tr><td colspan="6">Klik Refresh untuk memuat histori...</td></tr></tbody>
       </table>
     </div>
   </section>
+
+    <!-- OTS PANEL -->
+    <section id="ots" class="panel" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h2 style="margin:0;font-size:18px">OTS Tiket</h2>
+        <div>
+          <button class="btn" onclick="loadOts()">🔄 Refresh</button>
+          <button class="btn secondary" onclick="exportCSV()">⬇ Export CSV</button>
+        </div>
+      </div>
+  
+      <div style="margin-top:12px;overflow:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Nama</th>
+              <th>Jumlah</th>
+              <th>Jenis Tiket</th>
+              <th>Kode Pesanan</th>
+              <th>Status</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="otsBody">
+            <tr><td colspan="6">Klik Refresh untuk memuat Tiket Ots...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 </main>
 
 <!-- Modal (no auto-close) -->
@@ -147,6 +210,30 @@
 const SHEET_API = "https://script.google.com/macros/s/AKfycby_KZar7ssIv9wK5CRHUe0t-VoKmfgf-ihUHNvjIMH1O2R4zZWQeDDI_ETt2v54fGE/exec"; // contoh: https://script.google.com/macros/s/AKfycbXXXX/exec
 /* ============================================== */
 
+/* --- Check Login & Logout -- */
+if(localStorage.getItem("panitiaLogin") !== "true"){
+  window.location.href = "login.html";
+}
+function logout(){
+  const user = localStorage.getItem("panitiaUser");
+  const session = localStorage.getItem("panitiaSession");
+
+  // Panggil back-end untuk membersihkan sesi, tidak perlu menunggu selesai (fire and forget)
+  if (user && session) {
+    fetch(`${SHEET_API}?action=logout&username=${encodeURIComponent(user)}&sessionID=${encodeURIComponent(session)}`)
+      .catch(err => console.error("Logout API call failed:", err));
+  }
+
+  // Hapus semua data sesi dari browser
+  localStorage.removeItem("panitiaLogin");
+  localStorage.removeItem("panitiaUser");
+  localStorage.removeItem("panitiaSession");
+
+  // Arahkan ke halaman login
+  window.location.href = "login.html";
+}
+/* -------------------------- */
+
 let qrScanner = null;
 const sndValid = document.getElementById('sndValid');
 const sndUsed = document.getElementById('sndUsed');
@@ -156,9 +243,12 @@ const sndInvalid = document.getElementById('sndInvalid');
 function showPage(page){
   document.getElementById('scanner').style.display = page==='scanner' ? 'block' : 'none';
   document.getElementById('history').style.display = page==='history' ? 'block' : 'none';
+  document.getElementById('ots').style.display = page==='ots' ? 'block' : 'none';
   document.getElementById('tabScanner').classList.toggle('active', page==='scanner');
   document.getElementById('tabHistory').classList.toggle('active', page==='history');
+  document.getElementById('tabOts').classList.toggle('active', page==='ots');
   if(page==='history') loadHistory();
+  if(page==='ots') loadOts();
 }
 window.showPage = showPage;
 
@@ -298,45 +388,139 @@ function formatWIB(dateString){
     const tanggal = new Intl.DateTimeFormat("id-ID", optionsDate).format(date);
     const jam = new Intl.DateTimeFormat("id-ID", optionsTime).format(date).replace(/:/g,".");
     return `${jam} WIB ${tanggal}`;
-  }catch(e){
+  } catch(e) {
     return dateString;
   }
 }
 
-/* ---------- History ---------- */
-function loadHistory(){
+/* ---------- History Functions ---------- */
+function loadHistory() {
   const body = document.getElementById('historyBody');
-  body.innerHTML = `<tr><td colspan="5">⏳ Memuat...</td></tr>`;
+  body.innerHTML = `<tr><td colspan="5">⏳ Memuat histori...</td></tr>`;
+  
   fetch(`${SHEET_API}?action=history`)
-    .then(r=>r.json())
-    .then(res=>{
-      if(res.status === 'success' && res.data && Array.isArray(res.data.records)){
+    .then(r => r.json())
+    .then(res => {
+      if (res.status === 'success' && res.data && Array.isArray(res.data.records)) {
         const rows = res.data.records;
-        if(rows.length === 0){
-          body.innerHTML = `<tr><td colspan="5">Belum ada histori check-in</td></tr>`;
+        if (rows.length === 0) {
+          body.innerHTML = `<tr><td colspan="6">Belum ada riwayat</td></tr>`;
           return;
         }
-        body.innerHTML = rows.reverse().map(r=>{
+        
+        body.innerHTML = rows.reverse().map(r => {
           const statusText = (r['Status'] || '').toLowerCase();
-          let statusClass = 'status-error';
-          if(statusText.includes('berhasil')) statusClass = 'status-success';
-          else if(statusText.includes('terpakai')) statusClass = 'status-warning';
+          let statusClass = '';
+          if (statusText.includes('berhasil') || statusText.includes('approved')) {
+            statusClass = 'status-success';
+          } else if (statusText.includes('terpakai') || statusText.includes('rejected')) {
+            statusClass = 'status-error';
+          } else {
+            // Default to warning color for other statuses
+            statusClass = 'status-warning';
+          }
+          
+          const qrCode = r['Kode Tiket'] || '';  // Mengambil kode tiket untuk QR
+          const jumlahTiket = r['Jumlah Tiket'] || '1';  // Default 1 jika kosong
+          
           return `
             <tr>
               <td>${formatWIB(r['Timestamp'] || '')}</td>
-              <td>${escapeHtml(r['Kode Pesanan'] || '')}</td>
               <td>${escapeHtml(r['Nama'] || '')}</td>
+              <td class="center">${escapeHtml(jumlahTiket)}</td>
               <td>${escapeHtml(r['Jenis Tiket'] || '')}</td>
               <td class="${statusClass}">${escapeHtml(r['Status'] || '')}</td>
+              <td class="center">${qrCode ? `<div style="width: 60px; height: 60px; margin: 0 auto; display: flex; align-items: center; justify-content: center;">${escapeHtml(qrCode)}</div>` : '-'}</td>
+              <td>${escapeHtml(r['Kode Pesanan'] || '')}</td>
             </tr>
           `;
         }).join('');
       } else {
-        body.innerHTML = `<tr><td colspan="5">Gagal memuat histori</td></tr>`;
+        body.innerHTML = `<tr><td colspan="6">Gagal memuat histori</td></tr>`;
       }
     })
-    .catch(err=>{
-      body.innerHTML = `<tr><td colspan="5">Error: ${escapeHtml(err.message)}</td></tr>`;
+    .catch(err => {
+      console.error('Error loading history:', err);
+      body.innerHTML = `<tr><td colspan="6">Error: ${escapeHtml(err.message)}</td></tr>`;
+    });
+}
+
+/* ---------- OTS Functions ---------- */
+function updateOtsStatus(kodePesanan, action) {
+  if (!confirm(`Apakah Anda yakin ingin ${action} tiket ini?`)) return;
+  
+  fetch(`${SHEET_API}?action=updateOts&kodePesanan=${encodeURIComponent(kodePesanan)}&status=${action}`)
+    .then(r => r.json())
+    .then(res => {
+      if (res.status === 'success') {
+        showResultModal('success', 'Berhasil', `Tiket berhasil di${action === 'approve' ? 'setujui' : 'tolak'}`);
+        loadOts(); // Refresh the OTS list
+      } else {
+        showResultModal('error', 'Gagal', res.message || 'Gagal memperbarui status tiket');
+      }
+    })
+    .catch(err => {
+      showResultModal('error', 'Error', 'Terjadi kesalahan saat memproses permintaan');
+      console.error('Error updating OTS status:', err);
+    });
+}
+
+function loadOts() {
+  const body = document.getElementById('otsBody');
+  body.innerHTML = `<tr><td colspan="6">⏳ Memuat Tiket OTS...</td></tr>`;
+  
+  fetch(`${SHEET_API}?action=ots&sheet=TiketOTS`)
+    .then(r => r.json())
+    .then(res => {
+      if (res.status === 'success' && res.data && Array.isArray(res.data.records)) {
+        const rows = res.data.records;
+        if (rows.length === 0) {
+          body.innerHTML = `<tr><td colspan="6">Belum ada tiket OTS</td></tr>`;
+          return;
+        }
+        
+        body.innerHTML = rows.reverse().map(r => {
+          const status = r['Status'] || '';
+          const statusText = status.toLowerCase();
+          let statusClass = '';
+          
+          if (statusText.includes('approved')) {
+            statusClass = 'status-success';
+          } else if (statusText === 'belum diproses' || statusText === '') {
+            statusClass = 'status-warning';
+          } else if (statusText.includes('rejected')) {
+            statusClass = 'status-error';
+          } else {
+            // Default to warning for other statuses
+            statusClass = 'status-warning';
+          }
+          
+          return `
+            <tr>
+              <td>${formatWIB(r['Timestamp'] || '')}</td>
+              <td>${escapeHtml(r['Nama'] || '')}</td>
+              <td>${escapeHtml(r['Jumlah Tiket'] || '')}</td>
+              <td>${escapeHtml(r['Jenis Tiket'] || '')}</td>
+              <td>${escapeHtml(r['Kode Pesanan'] || '')}</td>
+              <td class="${statusClass}">${escapeHtml(r['Status'] || '')}</td>
+              <td class="action-buttons">
+                <button class="btn-approve" onclick="updateOtsStatus('${escapeHtml(r['Kode Pesanan'] || '')}', 'approve')" ${r['Status'] === 'Approved' || r['Status'] === 'Rejected' ? 'disabled' : ''}>
+                  Approve
+                </button>
+                <button class="btn-reject" onclick="updateOtsStatus('${escapeHtml(r['Kode Pesanan'] || '')}', 'reject')" ${r['Status'] === 'Approved' || r['Status'] === 'Rejected' ? 'disabled' : ''}>
+                  Reject
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } else {
+        body.innerHTML = `<tr><td colspan="7">Gagal memuat Tiket OTS. ${res.message || ''}</td></tr>`;
+      }
+    })
+    .catch(err => {
+      console.error('Error loading OTS:', err);
+      body.innerHTML = `<tr><td colspan="6">Error: ${escapeHtml(err.message)}</td></tr>`;
     });
 }
 
@@ -356,6 +540,24 @@ function exportCSV(){
     URL.revokeObjectURL(url);
   }).catch(e=>alert('Error export: '+e.message));
 }
+
+/* Export CSV dari ots di front-end */
+function exportCSV(){
+  fetch(`${SHEET_API}?action=ots`).then(r=>r.json()).then(res=>{
+    if(!(res.status==='success' && res.data && Array.isArray(res.data.records))){
+      return alert('Gagal memuat histori untuk export');
+    }
+    const rows = res.data.records;
+    if(rows.length===0) return alert('Belum ada histori');
+    const header = Object.keys(rows[0]);
+    const csv = [header.join(',')].concat(rows.map(r=> header.map(h=> `"${(r[h]||'').toString().replace(/"/g,'""')}"`).join(','))).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `histori_checkin_${Date.now()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  }).catch(e=>alert('Error export: '+e.message));
+}
+
 
 /* small helper */
 function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
