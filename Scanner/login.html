@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Login Panitia</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  body {
+    margin:0; font-family:'Rajdhani',sans-serif;
+    background:#0f1113; color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    height:100vh;
+  }
+  .card {
+    background:#15171a; padding:28px; border-radius:14px;
+    width:100%; max-width:360px; text-align:center;
+    box-shadow:0 8px 28px rgba(0,0,0,0.6);
+  }
+  h1 { margin:0 0 20px; font-size:22px; }
+  input {
+    width:100%; padding:12px; margin-bottom:14px;
+    border-radius:8px; border:1px solid #222;
+    background:#0b0c0d; color:#fff;
+    font-size:15px;
+    box-sizing:border-box;
+  }
+  button {
+    width:100%; padding:12px; border:none; border-radius:8px;
+    background:#ff2d2d; color:#fff; font-weight:700; cursor:pointer;
+    font-size:15px;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  button:disabled {
+    background:#555; cursor:not-allowed;
+  }
+  .spinner { 
+    width:18px; height:18px; border-radius:50%; 
+    border:2px solid rgba(255,255,255,0.3); 
+    border-top-color:#fff; 
+    animation:spin 1s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .error { color:#e74c3c; font-size:14px; margin-top:10px; min-height:18px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Login Panitia</h1>
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <button id="loginBtn" onclick="login()">
+      <span id="btnText">Masuk</span>
+      <div class="spinner" id="loader" style="display:none;"></div>
+    </button>
+    <div class="error" id="errorMsg"></div>
+  </div>
+
+<script>
+/* 
+  ==================================================================
+  GANTI URL DI BAWAH INI dengan URL Web App dari Google Apps Script
+  ==================================================================
+*/
+const LOGIN_API = "https://script.google.com/macros/s/AKfycby_KZar7ssIv9wK5CRHUe0t-VoKmfgf-ihUHNvjIMH1O2R4zZWQeDDI_ETt2v54fGE/exec"; 
+
+// Cek jika sudah login, langsung redirect
+if (localStorage.getItem("panitiaLogin") === "true") {
+  window.location.href = "scanner.html";
+}
+
+const usernameInput = document.getElementById("username");
+const passwordInput = document.getElementById("password");
+const loginBtn = document.getElementById("loginBtn");
+const btnText = document.getElementById("btnText");
+const loader = document.getElementById("loader");
+const err = document.getElementById("errorMsg");
+
+async function login(){
+  const u = usernameInput.value.trim();
+  const p = passwordInput.value.trim();
+  err.textContent = "";
+
+  if(!u || !p){
+    err.textContent = "Masukkan username dan password.";
+    return;
+  }
+
+  // Tampilkan loader dan disable tombol
+  loginBtn.disabled = true;
+  btnText.textContent = "Memproses...";
+  loader.style.display = 'block';
+
+  try {
+    const res = await fetch(`${LOGIN_API}?action=login&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}`);
+    const data = await res.json();
+    if(data.status === "success"){
+      localStorage.setItem("panitiaLogin","true");
+      localStorage.setItem("panitiaUser", u);
+      localStorage.setItem("panitiaSession", data.sessionID);
+      window.location.href = "scanner.html";
+    } else {
+      err.textContent = data.message || "Username / Password salah.";
+    }
+  } catch(e){
+    err.textContent = "Gagal menghubungkan ke server.";
+  } finally {
+    // Kembalikan tombol ke state semula
+    loginBtn.disabled = false;
+    btnText.textContent = "Masuk";
+    loader.style.display = 'none';
+  }
+}
+
+// Tambahkan event listener untuk tombol Enter
+passwordInput.addEventListener("keyup", function(event) {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    login();
+  }
+});
+usernameInput.addEventListener("keyup", function(event) {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    login();
+  }
+});
+
+</script>
+</body>
+</html>
