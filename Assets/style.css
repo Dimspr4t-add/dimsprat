@@ -885,10 +885,6 @@
     justify-content: space-between;
     align-items: center;
   }
-
-  .ticket-option .active {
-    background: rgb(255 0 0 / 33%);
-  }
   
   .ticket-option:hover {
     background: rgb(255 0 0 / 33%);
@@ -907,6 +903,12 @@
     opacity: 0.7;
     pointer-events: none;
   }
+
+  .ticket-option.soon {
+    position: relative;
+    opacity: 0.7;
+    pointer-events: none;
+  }
   
   .ticket-option.sold-out::after {
     content: 'SOLD OUT';
@@ -914,6 +916,21 @@
     top: 0;
     right: 0;
     background: #ff0000;
+    color: white;
+    padding: 3px 10px;
+    font-size: 12px;
+    font-weight: bold;
+    border-bottom-left-radius: 5px;
+    text-transform: uppercase;
+    z-index: 1;
+  }
+
+  .ticket-option.soon::after {
+    content: 'SOON';
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: #4caf50;
     color: white;
     padding: 3px 10px;
     font-size: 12px;
@@ -951,18 +968,18 @@
   .ticket-option.sold-out .stock {
     color: #ff4444;
   }
-  
-  .price {
-    font-size: 18px;
-    font-weight: bold;
-    color: #ff0000;
-    margin-left: 15px;
-    white-space: nowrap;
+
+  .ticket-option.soon .stock {
+    color: #4caf50;
   }
   
   .ticket-option.sold-out .price {
-    color: #888;
+    color: #ff0000 !important;
     text-decoration: line-through;
+  }
+
+  .ticket-option.soon .price {
+    color: #4caf50 !important;
   }
   
   .quantity-selector {
@@ -1780,4 +1797,3 @@
       font-size: 0.9rem;
     }
   }
-
