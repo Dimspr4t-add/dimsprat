@@ -5,7 +5,7 @@
   }
   body {
   font-family: "Rajdhani", sans-serif;
-  background: #0a0a0a url(images/Background.jpg) no-repeat center center fixed;
+  background: #0a0a0a url(images/Background.webp) no-repeat center center fixed;
   background-size: cover;
   color: #fff;
   overflow-x: hidden;
@@ -865,6 +865,8 @@
     padding-top: 10px;
     border-top: 2px solid #ff0000;
   }
+
+  /* --- Ticket Options --- */
   
   .ticket-options {
     margin: 20px 0;
@@ -896,21 +898,88 @@
     transform: translateY(-2px);
   }
   
+  .ticket-option.sold-out {
+    position: relative;
+    opacity: 0.7;
+    pointer-events: none;
+  }
+
+  .ticket-option.soon {
+    position: relative;
+    opacity: 0.7;
+    pointer-events: none;
+  }
+  
+  .ticket-option.sold-out::after {
+    content: 'SOLD OUT';
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: #ff0000;
+    color: white;
+    padding: 3px 10px;
+    font-size: 12px;
+    font-weight: bold;
+    border-bottom-left-radius: 5px;
+    text-transform: uppercase;
+    z-index: 1;
+  }
+
+  .ticket-option.soon::after {
+    content: 'SOON';
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: #4caf50;
+    color: white;
+    padding: 3px 10px;
+    font-size: 12px;
+    font-weight: bold;
+    border-bottom-left-radius: 5px;
+    text-transform: uppercase;
+    z-index: 1;
+  }
+
   .ticket-info {
     flex: 1;
   }
   
   .ticket-option h3 {
-    color: #ff0000;
+    color: #ffffff;
     margin: 0 0 5px 0;
     font-family: 'Orbitron', sans-serif;
     font-size: 1.1em;
+    font-size: 16px;
   }
   
   .ticket-option p {
     margin: 3px 0;
-    color: #ddd;
-    font-size: 0.9em;
+    color: #aaa;
+    font-size: 13px;
+  }
+
+  .ticket-info .stock {
+    color: #4caf50;
+    font-weight: bold;
+    font-size: 12px;
+    margin-top: 5px;
+  }
+  
+  .ticket-option.sold-out .stock {
+    color: #ff4444;
+  }
+
+  .ticket-option.soon .stock {
+    color: #4caf50;
+  }
+  
+  .ticket-option.sold-out .price {
+    color: #ff0000 !important;
+    text-decoration: line-through;
+  }
+
+  .ticket-option.soon .price {
+    color: #4caf50 !important;
   }
   
   .quantity-selector {
@@ -1439,13 +1508,292 @@
     background: #ff0000;
     color: #fff;
   }
-  
   .step.completed .step-number {
     background: #ffcc00;
     color: #000;
   }
-  
+
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Scanner-specific styles */
+  .scanner-container {
+    max-width: 800px;
+    margin: 100px auto 50px;
+    padding: 0 20px;
+    text-align: center;
+    animation: fade-in-up 1s ease-out;
+  }
+
+  .scanner-header {
+    margin-bottom: 50px;
+  }
+
+  .scanner-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 900;
+    color: #ff0000;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 20px;
+    text-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+    position: relative;
+  }
+
+  .scanner-title::before,
+  .scanner-title::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .scanner-title::before {
+    animation: glitch-1 0.5s infinite;
+    color: #ff0000;
+    z-index: -1;
+    text-shadow: -2px 0 #ff0000;
+  }
+
+  .scanner-title::after {
+    animation: glitch-2 0.5s infinite;
+    color: #00b2ff;
+    z-index: -1;
+    text-shadow: 2px 0 #00b2ff;
+  }
+
+  .scanner-subtitle {
+    font-size: 1.2rem;
+    color: #ddd;
+    opacity: 0.8;
+    font-weight: 300;
+  }
+
+  .scanner-input-container {
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid #ff0000;
+    border-radius: 15px;
+    padding: 40px;
+    margin: 30px 0;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 0 30px rgba(255, 0, 0, 0.1);
+    transition: all 0.3s ease;
+  }
+
+  .scanner-input-container:hover {
+    border-color: #ff3333;
+    box-shadow: 0 0 40px rgba(255, 0, 0, 0.2);
+    transform: translateY(-2px);
+  }
+
+  .barcode-input {
+    width: 100%;
+    max-width: 400px;
+    padding: 20px;
+    font-size: 1.2rem;
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid #333;
+    border-radius: 10px;
+    color: #fff;
+    text-align: center;
+    font-family: 'Rajdhani', sans-serif;
+    transition: all 0.3s ease;
+    margin: 0 auto 20px;
+    display: block;
+    letter-spacing: 1px;
+  }
+
+  .barcode-input:focus {
+    outline: none;
+    border-color: #ff0000;
+    box-shadow: 0 0 20px rgba(255, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.7);
+    transform: scale(1.02);
+  }
+
+  .scan-button {
+    background: #ff0000;
+    color: #fff;
+    border: none;
+    padding: 15px 40px;
+    font-size: 1.1rem;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin: 10px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .scan-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+  }
+
+  .scan-button:hover::before {
+    left: 100%;
+  }
+
+  .scan-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(255, 0, 0, 0.4);
+    background: #ff3333;
+  }
+
+  .scan-button:active {
+    transform: translateY(0);
+  }
+
+  .scan-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+
+  .clear-button {
+    background: transparent;
+    color: #ff0000;
+    border: 2px solid #ff0000;
+    padding: 12px 30px;
+    font-size: 1rem;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin: 10px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .clear-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: #ff0000;
+    transition: left 0.4s;
+    z-index: -1;
+  }
+
+  .clear-button:hover {
+    background: #ff0000;
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(255, 0, 0, 0.3);
+  }
+
+  .clear-button:hover::before {
+    left: 0;
+  }
+
+  .instructions {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid #333;
+    border-radius: 10px;
+    padding: 25px;
+    margin: 30px 0;
+    text-align: left;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    backdrop-filter: blur(5px);
+  }
+
+  .instructions h3 {
+    color: #ffcc00;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .instructions ul {
+    color: #ddd;
+    line-height: 1.6;
+  }
+
+  .instructions li {
+    margin-bottom: 8px;
+  }
+
+  .status-indicator {
+    margin: 20px 0;
+    padding: 15px;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
+  }
+
+  .status-ready {
+    background: rgba(0, 255, 0, 0.1);
+    border: 1px solid #00ff00;
+    color: #00ff00;
+  }
+
+  .status-checking {
+    background: rgba(255, 165, 0, 0.1);
+    border: 1px solid #ffa500;
+    color: #ffa500;
+  }
+
+  .status-error {
+    background: rgba(255, 0, 0, 0.1);
+    border: 1px solid #ff0000;
+    color: #ff0000;
+  }
+
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(255, 0, 0, 0.3); }
+    50% { box-shadow: 0 0 30px rgba(255, 0, 0, 0.6); }
+  }
+
+  .barcode-input:focus {
+    animation: pulse 2s infinite;
+  }
+
+  @media (max-width: 768px) {
+    .scanner-container {
+      margin: 80px auto 30px;
+      padding: 0 15px;
+    }
+
+    .scanner-input-container {
+      padding: 25px;
+    }
+
+    .barcode-input {
+      font-size: 1rem;
+      padding: 15px;
+    }
+
+    .instructions {
+      padding: 20px;
+    }
+
+    .scan-button, .clear-button {
+      padding: 12px 25px;
+      font-size: 0.9rem;
+    }
   }
