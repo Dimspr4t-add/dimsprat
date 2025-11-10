@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rock & Metal Night Eps.2 - DIMSPRAT</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link href="../Assets/style.css" rel="stylesheet">
+<style>
+
+/* --- Counter --- */
+.counter { display:flex; align-items:center; justify-content:center; margin:15px 0; }
+.counter button { background:#000; border:2px solid red; color:#fff; width:35px; height:35px; font-size:18px; cursor:pointer; }
+.counter span { margin:0 15px; font-size:20px; }
+
+/* Loading Spinner */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255,255,255,.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.loading-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.loading-content {
+  text-align: center;
+  color: white;
+}
+
+.loading-content .spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #ff0000;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 15px;
+}
+
+/* --- Buttons --- */
+.btn { background:red;color:#fff;border:none;padding:12px 20px;border-radius:5px;font-weight:bold;cursor:pointer;margin-top:10px; }
+.btn:disabled { background:#555; cursor:not-allowed; }
+
+/* --- Inputs --- */
+input, textarea { width:100%;padding:10px;margin:10px 0;border:2px solid #333;border-radius:6px;font-size:14px; }
+textarea { resize:none; }
+
+/* --- Upload --- */
+.upload-box { border:2px dashed red;padding:20px;text-align:center;margin:15px 0;border-radius:6px; }
+
+/* --- Radio Buttons --- */
+.radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 8px 0 4px;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  transition: all 0.2s ease;
+  border: 1px solid #ff0000;
+}
+
+.radio-option:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: #ff0000;
+}
+
+.radio-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.radio-custom {
+  position: relative;
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #ff0000;
+  border-radius: 50%;
+  margin-right: 10px;
+  transition: all 0.2s ease;
+}
+
+.radio-option input:checked + .radio-custom {
+  border-color: #ff0000;
+  background-color: #ff0000;
+  box-shadow: 0 0 0 2px rgba(255, 0, 0, 0.2);
+}
+
+.radio-custom::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: white;
+  transform: scale(0);
+  transition: transform 0.2s ease;
+}
+
+.radio-option input:checked + .radio-custom::after {
+  transform: scale(1);
+}
+
+.radio-label {
+  font-size: 14px;
+  color: #fff;
+  font-weight: 400;
+  transition: color 0.2s ease;
+}
+
+.radio-option input:checked ~ .radio-label {
+  color: #fff;
+  font-weight: 500;
+}
+
+/* --- Terms --- */
+.terms { margin-top:10px; }
+.terms a { color:yellow; cursor:pointer; }
+
+/* --- Modal --- */
+.modal { display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background-color: rgba(0,0,0,0.7); justify-content:center; align-items:center; }
+.modal-content { background-color:#111; padding:30px; border-radius:12px; text-align:center; color:#fff; max-width:400px; width:90%; transform:scale(0.8); opacity:0; animation: scaleIn 0.3s forwards; position:relative; }
+.modal-content h3 { margin-bottom:15px; font-size:22px; display:flex; justify-content:center; align-items:center; gap:10px; }
+.modal-content button { background:red; color:#fff; border:none; padding:12px 25px; border-radius:6px; cursor:pointer; font-weight:bold; margin-top:10px; }
+.checkmark { width:30px;height:20px;border-radius:50%;display:inline-block;border:2px solid #fff;position:relative; animation: pop 0.5s ease forwards; }
+.checkmark::after { content:''; position:absolute; left:8px; top:4px; width:8px; height:16px; border-right:3px solid #fff; border-bottom:3px solid #fff; transform:rotate(45deg) scale(0); animation: draw 0.4s 0.3s forwards; }
+
+@keyframes scaleIn { from{transform:scale(0.8);opacity:0;} to{transform:scale(1);opacity:1;} }
+@keyframes pop { 0%{transform:scale(0);opacity:0;} 50%{transform:scale(1.2);opacity:1;} 100%{transform:scale(1);} }
+@keyframes draw { to{transform:rotate(45deg) scale(1);} }
+  .ticket-option .active {
+    background: rgb(255 0 0 / 33%);
+    box-shadow: 0 0 15px rgb(255 0 0 / 26%);
+    transform: translateY(-2px);
+  }
+  .form-container {
+    gap: 0;
+  }
+  
+  /* Payment Options */
+  .payment-methods {
+    margin-top: 10px;
+  }
+  
+  .payment-option {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    border: 1px solid #ff0000;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    transition: all 0.2s ease;
+    background-color: rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+  }
+  
+  .payment-option:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: red;
+    box-shadow: 0 0 0 1px red;
+  }
+  
+  .payment-option:active {
+    transform: translateY(1px);
+  }
+  
+  .payment-logo {
+    width: 50px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+  }
+  
+  .payment-logo img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+  
+  .payment-details {
+    flex: 1;
+  }
+  
+  .payment-name {
+    font-weight: 600;
+    color: #fff;
+    display: block;
+    margin-bottom: 3px;
+  }
+  
+  .account-number-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .payment-account {
+    font-size: 13px;
+    color: #aaa;
+    margin-right: 10px;
+    word-break: break-all;
+  }
+  
+  .copy-account-btn {
+    background: none;
+    border: none;
+    color: #a6a6a6;
+    cursor: pointer;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+  }
+  
+  .copy-account-btn:hover {
+    background: rgba(255, 204, 0, 0.1);
+  }
+  
+  .payment-radio {
+    margin-left: 15px;
+  }
+  
+  .payment-radio input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+  }
+  
+  /* Event Image Styles */
+  .event-image-container {
+    margin: 20px auto;
+    max-width: 100%;
+    text-align: center;
+  }
+  
+  .event-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .event-image:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  }
+  
+  @media (max-width: 768px) {
+    .event-image {
+      width: 90%;
+      margin: 0 auto;
+    }
+    #qris-image-container img {
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 5px;
+      background: white;
+    }
+  }
+  
+  /* QRIS Modal Styles */
+  .qris-modal {
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+  }
+  
+  .qris-modal.show {
+    opacity: 1;
+    visibility: visible;
+  }
+  
+  .qris-modal-content {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    width: auto;
+    max-width: 90%;
+    max-height: 90vh;
+    position: relative;
+    text-align: center;
+    margin: 20px;
+    overflow-y: auto;
+    animation: modalFadeIn 0.3s ease;
+  }
+  
+  @keyframes modalFadeIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  
+  .qris-close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    color: #666;
+    font-size: 32px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+  
+  .qris-close:hover {
+    color: #ff0000;
+    transform: rotate(90deg);
+    background: #fff;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+  }
+  
+  .qris-image-container {
+    max-width: 300px;
+    margin: 0 auto;
+  }
+  
+  .qris-image-container img {
+    width: 100%;
+    height: auto;
+    border: 1px solid #eee;
+    border-radius: 8px;
+  }
+  
+  .qris-instruction {
+    color: #333;
+    margin-top: 15px;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+<script>
+  // QRIS Modal Functions
+  function selectQRIS(event) {
+    try {
+      event.stopPropagation();
+      const radio = document.getElementById('qris-radio');
+      if (radio) {
+        radio.checked = true;
+        showQRISModal();
+      }
+    } catch (error) {
+      console.error('Error in selectQRIS:', error);
+    }
+  }
+  
+  function showQRISModal() {
+    try {
+      const modal = document.getElementById('qris-modal');
+      if (modal) {
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+        // Auto-close after 5 minutes of inactivity
+        window.qrisModalTimeout = setTimeout(closeQRISModal, 300000);
+      }
+    } catch (error) {
+      console.error('Error in showQRISModal:', error);
+    }
+  }
+  
+  function closeQRISModal() {
+    try {
+      const modal = document.getElementById('qris-modal');
+      if (modal) {
+        modal.classList.remove('show');
+        document.body.style.overflow = 'auto';
+        // Clear any existing timeout
+        if (window.qrisModalTimeout) {
+          clearTimeout(window.qrisModalTimeout);
+        }
+      }
+    } catch (error) {
+      console.error('Error in closeQRISModal:', error);
+    }
+  }
+  
+  // Initialize modal events
+  document.addEventListener('DOMContentLoaded', function() {
+    try {
+      // Close modal when clicking outside the content
+      document.addEventListener('click', function(event) {
+        const modal = document.getElementById('qris-modal');
+        if (event.target === modal) {
+          closeQRISModal();
+        }
+      });
+      
+      // Close modal with Escape key
+      document.addEventListener('keydown', function(event) {
+        const modal = document.getElementById('qris-modal');
+        if (event.key === 'Escape' && modal && modal.classList.contains('show')) {
+          closeQRISModal();
+        }
+      });
+      
+      // Clean up event listeners when the page is unloaded
+      window.addEventListener('beforeunload', function() {
+        if (window.qrisModalTimeout) {
+          clearTimeout(window.qrisModalTimeout);
+        }
+      });
+    } catch (error) {
+      console.error('Error initializing QRIS modal:', error);
+    }
+  });
+</script>
+
+<header id="header">
+  <div class="header-container">
+      <a href="../index.html" class="logo-link">
+          <img src="../Assets/images/logo.png" alt="Dimsprat Logo" class="logo-img">
+      </a>
+  </div>
+</header>
+
+<section class="title-event" id="title-event">
+  <div class="hero-content">
+    <div class="text-rotator">
+        <div class="text-set active">
+            <h1 class="glitch-text" data-text="PARTYDOLL REGGEA FEST">PARTYDOLL REGGEA FEST</h1>
+            <div class="event-image-container">
+                <img 
+                    src="https://res.cloudinary.com/dn4ugx6ar/image/upload/c_scale,w_800/v1762591908/IMG_0806.jpg" 
+                    srcset="https://res.cloudinary.com/dn4ugx6ar/image/upload/c_scale,w_400/v1762591908/IMG_0806.jpg 400w,
+                            https://res.cloudinary.com/dn4ugx6ar/image/upload/c_scale,w_600/v1762591908/IMG_0806.jpg 600w,
+                            https://res.cloudinary.com/dn4ugx6ar/image/upload/c_scale,w_800/v1762591908/IMG_0806.jpg 800w"
+                    sizes="(max-width: 600px) 90vw, (max-width: 900px) 70vw, 400px"
+                    alt="PartyDoll Reggae Fest" 
+                    class="event-image"
+                    loading="lazy"
+                >
+            </div>
+        </div>
+    </div>
+</div>
+<div class="form-container">
+<!-- step-indicator -->
+<div class="step-indicator" style="display:flex;justify-content:space-between;margin-bottom:20px;">
+  <div class="step active" id="step1"><div class="step-number">1</div><div class="step-title">Pilih Tiket</div></div>
+  <div class="step" id="step2"><div class="step-number">2</div><div class="step-title">Data Diri</div></div>
+  <div class="step" id="step3"><div class="step-number">3</div><div class="step-title">Pembayaran</div></div>
+</div>
+
+<form id="form">
+
+<!-- Step 1 -->
+<div class="form-step active" id="form-step1">
+<h3 style="color:#fff;text-align:center;">Pilih Jenis Tiket</h3>
+<div class='ticket-options'>
+  <div class='ticket-option sold-out' data-name='EARLY ENTRY' data-ticket='50000' data-drink='0'>
+    <div class='ticket-info'>
+      <h3>EARLY ENTRY</h3>
+      <p>Batas masuk jam 18.00 WIB / 6 Sore</p>
+      <p class='stock'>Habis</p>
+    </div>
+    <div class='price'>Rp 50.000</div>
+  </div>
+  <div class='ticket-option available' data-name='PRESALE 1' data-ticket='65000' data-drink='0'>
+    <div class='ticket-info'>
+      <h3>PRESALE 1</h3>
+      <p>Tidak ada batas masuk</p>
+      <p class='stock'>Hampir Habis</p>
+    </div>
+    <div class='price'>Rp 65.000</div>
+  </div>
+  <div class='ticket-option available' data-name='NORMAL' data-ticket='85000' data-drink='0'>
+    <div class='ticket-info'>
+      <h3>NORMAL</h3>
+      <p>Tidak ada batas masuk</p>
+      <p class='stock'>Kuota terbatas</p>
+    </div>
+    <div class='price'>Rp 85.000</div>
+  </div>
+  <div class='ticket-option soon' data-name='ON THE SPOT' data-ticket='0' data-drink='0'>
+    <div class='ticket-info'>
+      <h3>ON THE SPOT</h3>
+      <p>Tidak ada batas masuk</p>
+      <p class='stock'>Segera</p>
+    </div>
+    <div class='price'>Rp 0.000</div>
+  </div>
+</div>
+
+<div class="counter">
+  <button type="button" id="minus">-</button>
+  <span id="qty">1</span>
+  <button type="button" id="plus">+</button>
+</div>
+
+<button type="button" class="btn" id="next1">LANJUT</button>
+</div>
+
+<!-- Step 2 -->
+<div class="form-step" id="form-step2">
+  <h3 style="color: #fff; margin-bottom: 20px; text-align: center;">Data Diri</h3>
+  <div class="form-group">
+    <label for="Nama Lengkap">Nama Lengkap*</label>
+    <input type="text" id="nama" placeholder="Nama Lengkap*" required>
+  </div>
+  <div class="form-group">
+    <label for="email">EMAIL*</label>
+    <input type="email" id="email" placeholder="Email*" required>
+  </div>
+  <div class="form-group">
+    <label for="Nomor WhatsApp">Nomor WhatsApp*</label>
+    <input type="text" id="wa" placeholder="Nomor WhatsApp (format: 62...)*" required pattern="62[0-9]{8,15}" title="Nomor WhatsApp harus diawali 62 dan hanya angka">
+  </div>
+  <div class="form-group">
+    <label class="form-label">Komunitas*</label>
+    <div class="radio-group">
+        <label class="radio-option">
+            <input type="radio" name="Komunitas" value="SJUB Utara" required checked>
+            <span class="radio-custom"></span>
+            <span class="radio-label">SJUB Utara</span>
+        </label>
+        <label class="radio-option">
+            <input type="radio" name="Komunitas" value="PSBJ Barat">
+            <span class="radio-custom"></span>
+            <span class="radio-label">PSBJ Barat</span>
+        </label>
+        <label class="radio-option">
+            <input type="radio" name="Komunitas" value="SJTB Timur">
+            <span class="radio-custom"></span>
+            <span class="radio-label">SJTB Timur</span>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="Komunitas" value="PSJS Selatan">
+          <span class="radio-custom"></span>
+          <span class="radio-label">PSJS Selatan</span>
+       </label>
+        <label class="radio-option">
+            <input type="radio" name="Komunitas" value="SJPB Pusat">
+            <span class="radio-custom"></span>
+            <span class="radio-label">SJPB Pusat</span>
+        </label>
+        <label class="radio-option">
+            <input type="radio" name="Komunitas" value="STAKOTA">
+            <span class="radio-custom"></span>
+            <span class="radio-label">STAKOTA</span>
+        </label>
+        <label class="radio-option">
+            <input type="radio" name="Komunitas" value="STJ Bekasi">
+            <span class="radio-custom"></span>
+            <span class="radio-label">STJ Bekasi</span>
+        </label>
+        <label class="radio-option">
+            <input type="radio" name="Komunitas" value="GC FORSTANG">
+            <span class="radio-custom"></span>
+            <span class="radio-label">GC FORSTANG</span>
+        </label>
+        <label class="radio-option">
+            <input type="radio" name="Komunitas" value="MANTEMAN (BONI)">
+            <span class="radio-custom"></span>
+            <span class="radio-label">MANTEMAN (BONI)</span>
+        </label>
+        <label class="radio-option">
+            <input type="radio" name="Komunitas" value="MOMONON LAMZ (YOGAY)">
+            <span class="radio-custom"></span>
+            <span class="radio-label">MOMONON LAMZ (YOGAY)</span>
+        </label>
+        <label class="radio-option">
+            <input type="radio" name="Komunitas" value="CHIVLAK BALLEROMBENG (JAKAAA)">
+            <span class="radio-custom"></span>
+            <span class="radio-label">CHIVLAK BALLEROMBENG (JAKAAA)</span>
+        </label>
+        <label class="radio-option">
+            <input type="radio" name="Komunitas" value="INFO REGGAE SEARCH INDONESIA (ANGGA)">
+            <span class="radio-custom"></span>
+            <span class="radio-label">INFO REGGAE SEARCH INDONESIA (ANGGA)</span>
+        </label>
+        <label class="radio-option">
+            <input type="radio" name="Komunitas" value="PRIOK YOMAN ID (HAMZYEAH)">
+            <span class="radio-custom"></span>
+            <span class="radio-label">PRIOK YOMAN ID (HAMZYEAH)</span>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="Komunitas" value="RINDU REGGEA (KODIL)">
+          <span class="radio-custom"></span>
+          <span class="radio-label">RINDU REGGEA (KODIL)</span>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="Komunitas" value="KOMUNITAS REGGEA JAKSEL (PRAY)">
+          <span class="radio-custom"></span>
+          <span class="radio-label">KOMUNITAS REGGEA JAKSEL (PRAY)</span>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="Komunitas" value="REGGAENATION JKT (JEFRI)">
+          <span class="radio-custom"></span>
+          <span class="radio-label">REGGAENATION JKT (JEFRI)</span>
+        </label>
+        <label class="radio-option">
+            <input type="radio" name="Komunitas" value="Umum">
+            <span class="radio-custom"></span>
+            <span class="radio-label">Umum</span>
+        </label>
+      </div>
+  </div>
+  <div class="form-group">
+    <label for="rekomendasi">Rekomendasi untuk Event Selanjutnya*</label>
+    <textarea id="rekomendasi" placeholder="Tulis Rekomendasi untuk Event Selanjutnya" required></textarea>
+  </div>
+<button type="button" class="btn" id="back1">KEMBALI</button>
+<button type="button" class="btn" id="next2">LANJUT</button>
+</div>
+
+<!-- Step 3 -->
+<div class="form-step" id="form-step3">
+  <h3 style="color: #fff; margin-bottom: 20px; text-align: center;">Ringkasan Pesanan</h3>
+
+  <div class="summary-total">
+    <span>Total Pembayaran</span>
+    <span id="totalBayar">Rp&nbsp;75.000,00</span>
+  </div>
+
+<div class="form-group">
+  <label>Metode Pembayaran*</label>
+<div class="payment-methods">
+  <div class="payment-option" onclick="this.querySelector('input[type=\'radio\']').click()" style="cursor: pointer;">
+    <div class="payment-logo">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/5/5c/Bank_Central_Asia.svg" alt="BCA">
+    </div>
+    <div class="payment-details">
+      <span class="payment-name">Bank BCA</span>
+      <div class="account-number-row">
+        <span class="payment-account">4140608250 (Tiara Pinandita)</span>
+        <button type="button" class="copy-account-btn" onclick="copyAccountNumber('4140608250', this)" title="Salin nomor rekening">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 4V16C8 16.5304 8.21071 17.0391 8.58579 17.4142C8.96086 17.7893 9.46957 18 10 18H18C18.5304 18 19.0391 17.7893 19.4142 17.4142C19.7893 17.0391 20 16.5304 20 16V7.41C20 7.1573 19.9488 6.90741 19.85 6.676L16.63 0H10C9.46957 0 8.96086 0.210714 8.58579 0.585786C8.21071 0.960859 8 1.46957 8 2V4Z" fill="currentColor"></path>
+            <path d="M16 18V22C16 22.5304 15.7893 23.0391 15.4142 23.4142C15.0391 23.7893 14.5304 24 14 24H6C5.46957 24 4.96086 23.7893 4.58579 23.4142C4.21071 23.0391 4 22.5304 4 22V8C4 7.46957 4.21071 6.96086 4.58579 6.58579C4.96086 6.21071 5.46957 6 6 6H10" fill="currentColor"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="payment-radio">
+      <input type="radio" name="payment" value="BCA">
+    </div>
+  </div>
+  <div class="payment-option" onclick="this.querySelector('input[type=\'radio\']').click()" style="cursor: pointer;">
+    <div class="payment-logo">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Logo_dana_blue.svg" alt="DANA">
+    </div>
+    <div class="payment-details">
+      <span class="payment-name">DANA</span>
+      <div class="account-number-row">
+        <span class="payment-account">082130039618 (Tiara Pinandita)</span>
+        <button type="button" class="copy-account-btn" onclick="copyAccountNumber('082130039618', this)" title="Salin nomor rekening">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 4V16C8 16.5304 8.21071 17.0391 8.58579 17.4142C8.96086 17.7893 9.46957 18 10 18H18C18.5304 18 19.0391 17.7893 19.4142 17.4142C19.7893 17.0391 20 16.5304 20 16V7.41C20 7.1573 19.9488 6.90741 19.85 6.676L16.63 0H10C9.46957 0 8.96086 0.210714 8.58579 0.585786C8.21071 0.960859 8 1.46957 8 2V4Z" fill="currentColor"></path>
+            <path d="M16 18V22C16 22.5304 15.7893 23.0391 15.4142 23.4142C15.0391 23.7893 14.5304 24 14 24H6C5.46957 24 4.96086 23.7893 4.58579 23.4142C4.21071 23.0391 4 22.5304 4 22V8C4 7.46957 4.21071 6.96086 4.58579 6.58579C4.96086 6.21071 5.46957 6 6 6H10" fill="currentColor"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="payment-radio">
+      <input type="radio" name="payment" value="DANA">
+    </div> 
+  </div>
+  <div class="payment-option" onclick="this.querySelector('input[type=\'radio\']').click()" style="cursor: pointer;">
+    <div class="payment-logo">
+      <img src="https://static-src.vocagame.com/gopay/site-logo-full-white-0a7e-original.png" alt="GoPay">
+    </div>
+    <div class="payment-details">
+      <span class="payment-name">GoPay</span>
+      <div class="account-number-row">
+        <span class="payment-account">082130039618 (Tiara Pinandita)</span>
+        <button type="button" class="copy-account-btn" onclick="copyAccountNumber('082130039618', this)" title="Salin nomor telepon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 4V16C8 16.5304 8.21071 17.0391 8.58579 17.4142C8.96086 17.7893 9.46957 18 10 18H18C18.5304 18 19.0391 17.7893 19.4142 17.4142C19.7893 17.0391 20 16.5304 20 16V7.41C20 7.1573 19.9488 6.90741 19.85 6.676L16.63 0H10C9.46957 0 8.96086 0.210714 8.58579 0.585786C8.21071 0.960859 8 1.46957 8 2V4Z" fill="currentColor"></path>
+            <path d="M16 18V22C16 22.5304 15.7893 23.0391 15.4142 23.4142C15.0391 23.7893 14.5304 24 14 24H6C5.46957 24 4.96086 23.7893 4.58579 23.4142C4.21071 23.0391 4 22.5304 4 22V8C4 7.46957 4.21071 6.96086 4.58579 6.58579C4.96086 6.21071 5.46957 6 6 6H10" fill="currentColor"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="payment-radio">
+      <input type="radio" name="payment" value="GoPay">
+    </div> 
+  </div>
+  <div class="payment-option" onclick="selectQRIS()" style="cursor: pointer;">
+    <div class="payment-logo">
+      <img src="https://shop.bukuerlangga.com//assets/front/images/qris_putih.png" alt="QRIS">
+    </div>
+    <div class="payment-details">
+      <span class="payment-name">QRIS</span>
+      <div class="account-number-row">
+        <span class="payment-account">Scan kode QRIS untuk pembayaran</span>
+        <button type="button" class="copy-account-btn" onclick="event.stopPropagation(); showQRISModal()" title="Lihat QRIS">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15 3H21V9M9 21H3V15M21 3L12 12M3 21L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="payment-radio">
+      <input type="radio" name="payment" value="QRIS" id="qris-radio">
+    </div> 
+  </div>
+  
+  <!-- QRIS Modal -->
+  <div id="qris-modal" class="qris-modal">
+    <div class="qris-modal-content">
+      <span class="qris-close" onclick="closeQRISModal()">&times;</span>
+      <div class="qris-image-container">
+        <img src="https://res.cloudinary.com/dn4ugx6ar/image/upload/v1762709959/sldsqkyohlfrdwfel79k.jpg" alt="Kode QRIS">
+        <p class="qris-instruction">Scan kode QRIS di atas untuk melakukan pembayaran</p>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="upload-box">
+  <label for="bukti">Upload Bukti Pembayaran*</label>
+  <input type="file" id="bukti" accept=".png,.jpg,.jpeg" required>
+</div>
+
+<div class="form-group terms-checkbox-container" style="margin: 25px 0 15px;">
+  <label class="custom-checkbox">
+    <input type="checkbox" id="terms" name="syarat" required="">
+    <span class="checkmark">
+      <svg width="12" height="10" viewBox="0 0 12 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M1 5.5L4.5 9L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg>
+    </span>
+    <span class="terms-text">Saya menyetujui <a id="openTerms">syarat dan ketentuan</a> yang berlaku<span class="required-asterisk">*</span></span>
+  </label>
+</div>
+
+<button type="button" class="btn" id="back2">KEMBALI</button>
+<button type="button" class="btn" id="submitBtn" disabled>KIRIM PESANAN</button>
+</div>
+</form>
+<div class="summary-section">
+  <h3 style="color: #ffcc00; margin-top: 0; text-align: center;">Ringkasan Pesanan</h3>
+<div class="order-summary" id="summary3">
+  <div id="order-summary">
+    <p style="text-align: center; color: #999;">Pilih tiket untuk melihat ringkasan</p>
+  </div>
+</div>
+</div>
+</section>
+
+<!-- Modal Syarat & Ketentuan -->
+<div class="modal" id="modalTerms">
+  <div class="modal-content" style="max-height:80vh;overflow:auto;text-align:left;">
+    <h3>Syarat & Ketentuan Acara</h3>
+    <p>1. Tiket hanya berlaku setelah pembayaran terkonfirmasi.</p>
+    <p>2. Data diri wajib diisi dengan benar.</p>
+    <p>3. Tiket bersifat non-transferable.</p>
+    <p>4. Bukti pembayaran wajib diunggah melalui form resmi.</p>
+    <p>5. Setelah konfirmasi, peserta akan menerima kode pesanan unik.</p>
+    <p>6. Kehilangan kode pesanan bukan tanggung jawab panitia.</p>
+    <p>7. Peserta wajib mematuhi peraturan venue dan panitia.</p>
+    <p>8. Pengembalian dana mengikuti kebijakan panitia.</p>
+    <p>9. Foto/video peserta boleh digunakan untuk promosi resmi.</p>
+    <p>10. Keputusan panitia bersifat final.</p>
+    <button id="closeTerms" class="btn">Tutup</button>
+  </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-content">
+    <div class="spinner"></div>
+    <p>Menyimpan data...</p>
+  </div>
+</div>
+
+<!-- Modal Konfirmasi -->
+<div class="modal" id="modalConfirm">
+  <div class="modal-content">
+    <h3></span> Pesanan Berhasil!</h3>
+    <p>Terima kasih atas pembelian tiket Anda. Pesanan Anda sedang kami verifikasi, dan tiket akan segera dikirimkan ke alamat email yang telah Anda daftarkan.</p>
+    <p id="kodePesanan" style="margin:10px 0;color:#ffcc00;font-weight:bold;"></p>
+    <button id="modalClose" class="btn">Tutup</button>
+  </div>
+</div>
+<script src="js/partydoll-reggae-fest.js"></script>
+</body>
+</html>
