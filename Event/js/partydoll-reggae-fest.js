@@ -23,7 +23,7 @@ tickets.forEach(t => {
 
 // Counter tiket
 minus.onclick = () => { if (qty > 1) { qty--; updateQty(); } };
-plus.onclick = () => { if (qty < 3) { qty++; updateQty(); } };
+plus.onclick = () => { if (qty < 10) { qty++; updateQty(); } };
 function updateQty() { qtyEl.textContent = qty; updateSummary(); }
 
 // Update ringkasan
@@ -195,4 +195,5 @@ document.getElementById("submitBtn").onclick = async () => {
 
 // Modal close
 document.getElementById("modalClose").onclick = () => location.reload();
+
 window.onclick = (e) => { if (e.target == document.getElementById("modalConfirm")) location.reload(); };
