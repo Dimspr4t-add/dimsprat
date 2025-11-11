@@ -396,6 +396,81 @@ textarea { resize:none; }
 </style>
 </head>
 <body>
+<script>
+  // QRIS Modal Functions
+  function selectQRIS(event) {
+    try {
+      event.stopPropagation();
+      const radio = document.getElementById('qris-radio');
+      if (radio) {
+        radio.checked = true;
+        showQRISModal();
+      }
+    } catch (error) {
+      console.error('Error in selectQRIS:', error);
+    }
+  }
+  
+  function showQRISModal() {
+    try {
+      const modal = document.getElementById('qris-modal');
+      if (modal) {
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+        // Auto-close after 5 minutes of inactivity
+        window.qrisModalTimeout = setTimeout(closeQRISModal, 300000);
+      }
+    } catch (error) {
+      console.error('Error in showQRISModal:', error);
+    }
+  }
+  
+  function closeQRISModal() {
+    try {
+      const modal = document.getElementById('qris-modal');
+      if (modal) {
+        modal.classList.remove('show');
+        document.body.style.overflow = 'auto';
+        // Clear any existing timeout
+        if (window.qrisModalTimeout) {
+          clearTimeout(window.qrisModalTimeout);
+        }
+      }
+    } catch (error) {
+      console.error('Error in closeQRISModal:', error);
+    }
+  }
+  
+  // Initialize modal events
+  document.addEventListener('DOMContentLoaded', function() {
+    try {
+      // Close modal when clicking outside the content
+      document.addEventListener('click', function(event) {
+        const modal = document.getElementById('qris-modal');
+        if (event.target === modal) {
+          closeQRISModal();
+        }
+      });
+      
+      // Close modal with Escape key
+      document.addEventListener('keydown', function(event) {
+        const modal = document.getElementById('qris-modal');
+        if (event.key === 'Escape' && modal && modal.classList.contains('show')) {
+          closeQRISModal();
+        }
+      });
+      
+      // Clean up event listeners when the page is unloaded
+      window.addEventListener('beforeunload', function() {
+        if (window.qrisModalTimeout) {
+          clearTimeout(window.qrisModalTimeout);
+        }
+      });
+    } catch (error) {
+      console.error('Error initializing QRIS modal:', error);
+    }
+  });
+</script>
 
 <header id="header">
   <div class="header-container">
@@ -626,6 +701,25 @@ textarea { resize:none; }
     <div class="payment-radio">
       <input type="radio" name="payment" value="BCA">
     </div>
+  </div>
+  <div class="payment-option" onclick="selectQRIS()" style="cursor: pointer;">
+    <div class="payment-logo">
+      <img src="https://shop.bukuerlangga.com//assets/front/images/qris_putih.png" alt="QRIS">
+    </div>
+    <div class="payment-details">
+      <span class="payment-name">QRIS</span>
+      <div class="account-number-row">
+        <span class="payment-account">Scan kode QRIS untuk pembayaran</span>
+        <button type="button" class="copy-account-btn" onclick="event.stopPropagation(); showQRISModal()" title="Lihat QRIS">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15 3H21V9M9 21H3V15M21 3L12 12M3 21L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="payment-radio">
+      <input type="radio" name="payment" value="QRIS" id="qris-radio">
+    </div> 
   </div>
   
   <!-- QRIS Modal -->
