@@ -1,0 +1,373 @@
+/***************************************************
+ * Google Apps Script Event (Login, Validasi, Histori, OTS)
+ * Sheet Panitia: "Panitia" (username, password, sessionID)
+ * Sheet Tiket: "Tiket" (Kode Tiket, Jumlah Tiket, Nama, Jenis Tiket, Kode Pesanan, Status)
+ * Sheet Histori: "Histori"
+ ***************************************************/
+
+const SHEET_PANITIA = "Panitia";
+const SHEET_TIKET   = "Tiket";
+const SHEET_HISTORI = "Histori";
+
+// --- ENTRY POINTS ---
+function doGet(e) {
+  if (!e) {
+    e = { parameter: { action: "login", username: "test", password: "1234" } };
+  }
+  return handleRequest(e);
+}
+
+function doPost(e) {
+  if (!e) {
+    e = { parameter: { action: "validate", code: "QR123" } };
+  }
+  return handleRequest(e);
+}
+
+// --- MAIN ROUTER ---
+function handleRequest(e) {
+  try {
+    const params = e.parameter || {};
+    const action = (params.action || "").toString().trim().toLowerCase();
+
+    if (!action) {
+      return jsonResponse({ status: "error", message: "Parameter 'action' diperlukan" });
+    }
+
+    switch (action) {
+      case "login":
+        return handleLogin(params.username, params.password);
+
+      case "logout":
+        return handleLogout(params.username, params.sessionID);
+
+      case "validate":
+        return validateTicket(params.code);
+
+      case "history":
+        return getHistory();
+
+      case "ots":
+        return getOts(params.sheet || "TiketOTS");
+
+      case "updateots":
+        return updateOts(params.kodePesanan, params.status);
+
+      default:
+        return jsonResponse({ status: "error", message: "Action tidak dikenal: " + action });
+    }
+  } catch (err) {
+    Logger.log("Server Error: " + err.stack);
+    return jsonResponse({ status: "error", message: "Terjadi kesalahan di server: " + err.message });
+  }
+}
+
+// --- LOGIN / LOGOUT ---
+function handleLogin(username, password) {
+  username = (username || "").toString().trim();
+  password = (password || "").toString().trim();
+
+  if (!username || !password) {
+    return jsonResponse({ status: "error", message: "Username dan password harus diisi." });
+  }
+
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PANITIA);
+  if (!sheet) return jsonResponse({ status: "error", message: "Sheet Panitia tidak ditemukan." });
+
+  const values = sheet.getDataRange().getValues();
+  const headers = values.shift().map(h => h.toString().toLowerCase());
+
+  const usernameIndex = headers.indexOf("username");
+  const passwordIndex = headers.indexOf("password");
+  const sessionIndex  = headers.indexOf("sessionid");
+
+  if (usernameIndex === -1 || passwordIndex === -1 || sessionIndex === -1) {
+    return jsonResponse({ status: "error", message: "Kolom username/password/sessionID tidak ditemukan." });
+  }
+
+  for (let i = 0; i < values.length; i++) {
+    const row = values[i];
+    if (String(row[usernameIndex]).trim() === username &&
+        String(row[passwordIndex]).trim() === password) {
+
+      if (String(row[sessionIndex] || "").trim()) {
+        return jsonResponse({ status: "error", message: "Akun ini sedang digunakan di perangkat lain." });
+      }
+
+      const newSessionId = Utilities.getUuid();
+      sheet.getRange(i + 2, sessionIndex + 1).setValue(newSessionId);
+
+      return jsonResponse({ status: "success", message: "Login berhasil.", sessionID: newSessionId });
+    }
+  }
+
+  return jsonResponse({ status: "error", message: "Username atau Password salah." });
+}
+
+function handleLogout(username, sessionId) {
+  // Log the received parameters for debugging
+  console.log('Logout requested for:', { username, sessionId });
+  
+  username  = (username || "").toString().trim();
+  sessionId = (sessionId || "").toString().trim();
+
+  if (!username) {
+    console.log('Logout failed: Username is required');
+    return jsonResponse({ status: "error", message: "Username tidak boleh kosong." });
+  }
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(SHEET_PANITIA);
+  if (!sheet) {
+    console.log('Logout failed: Panitia sheet not found');
+    return jsonResponse({ status: "error", message: "Sheet Panitia tidak ditemukan." });
+  }
+
+  try {
+    const values = sheet.getDataRange().getValues();
+    const headers = values.shift().map(h => h.toString().toLowerCase());
+
+    const usernameIndex = headers.indexOf("username");
+    const sessionIndex = headers.indexOf("sessionid");
+    
+    if (usernameIndex === -1 || sessionIndex === -1) {
+      console.log('Logout failed: Required columns not found');
+      return jsonResponse({ status: "error", message: "Format sheet Panitia tidak valid." });
+    }
+
+    let logoutSuccess = false;
+    const rowsToUpdate = [];
+
+    // First pass: find all matching rows
+    for (let i = 0; i < values.length; i++) {
+      const row = values[i];
+      const currentUsername = String(row[usernameIndex] || "").trim();
+      const currentSession = String(row[sessionIndex] || "").trim();
+      
+      if (currentUsername === username && (!sessionId || currentSession === sessionId)) {
+        rowsToUpdate.push(i + 2); // +2 because we shifted headers and arrays are 0-based
+      }
+    }
+
+    // Second pass: update all matching rows in a single batch
+    if (rowsToUpdate.length > 0) {
+      const rangeList = rowsToUpdate.map(rowNum => {
+        return sheet.getRange(rowNum, sessionIndex + 1);
+      });
+      
+      // Clear all matching session IDs in one operation
+      rangeList.forEach(range => range.clearContent());
+      console.log(`Cleared session for ${rowsToUpdate.length} row(s)`);
+      return jsonResponse({ 
+        status: "success", 
+        message: `Logout berhasil. ${rowsToUpdate.length} sesi dihapus.` 
+      });
+    } else {
+      console.log('No matching sessions found to clear');
+      return jsonResponse({ 
+        status: "success", 
+        message: "Tidak ada sesi aktif yang ditemukan." 
+      });
+    }
+  } catch (error) {
+    console.error('Logout error:', error);
+    return jsonResponse({ 
+      status: "error", 
+      message: `Terjadi kesalahan saat logout: ${error.message}` 
+    });
+  }
+
+  return jsonResponse({ status: "success", message: "Sesi tidak ditemukan, logout diizinkan." });
+}
+
+// --- VALIDASI TIKET ---
+function validateTicket(code) {
+  code = (code || "").toString().trim();
+  if (!code) return jsonResponse({ status: "error", message: "Parameter 'code' kosong" });
+
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_TIKET);
+  if (!sheet) return jsonResponse({ status: "error", message: "Sheet Tiket tidak ditemukan." });
+
+  const values = sheet.getDataRange().getValues();
+  if (values.length < 2) return jsonResponse({ status: "error", message: "Data tiket kosong." });
+
+  const headers = values[0].map(h => String(h).trim().toLowerCase());
+  const idxKodeTik = headers.indexOf("kode tiket");
+  const idxJumlah   = headers.indexOf("jumlah tiket");
+  const idxNama     = headers.indexOf("nama");
+  const idxJenis    = headers.indexOf("jenis tiket");
+  const idxPesanan  = headers.indexOf("kode pesanan");
+  const idxStatus   = headers.indexOf("status");
+
+  for (let i = 1; i < values.length; i++) {
+    const row = values[i];
+    if (String(row[idxKodeTik]).trim() === code) {
+      const data = {
+        jumlah_tiket: row[idxJumlah] || "",
+        nama: row[idxNama] || "",
+        jenis_tiket: row[idxJenis] || "",
+        kode_pesanan: row[idxPesanan] || ""
+      };
+      const status = String(row[idxStatus] || "").trim();
+
+      if (!status) {
+        sheet.getRange(i + 1, idxStatus + 1).setValue("Berhasil");
+        logHistory(code, data.jumlah_tiket, data.nama, data.jenis_tiket, data.jumlah_tiket, data.kode_pesanan, "Berhasil");
+        return jsonResponse({ status: "success", message: "Check-in Berhasil", data });
+      } else {
+        logHistory(code, data.jumlah_tiket, data.nama, data.jenis_tiket, data.jumlah_tiket, data.kode_pesanan, "Sudah Terpakai");
+        return jsonResponse({ status: "warning", message: "Tiket Sudah Terpakai", data });
+      }
+    }
+  }
+
+  logHistory(code, "-", "-", "-", "-", "Tiket Tidak Ditemukan");
+  return jsonResponse({ status: "error", message: "Tiket tidak ditemukan" });
+}
+
+// --- LOG HISTORI ---
+function logHistory(kode, jumlah, nama, jenis, pesanan, status) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // Get data from Tiket sheet if available
+  const tiketSheet = ss.getSheetByName(SHEET_TIKET);
+  if (tiketSheet && kode && kode !== "-") {
+    const tiketData = tiketSheet.getDataRange().getValues();
+    const headers = tiketData.shift();
+    const kodeCol = headers.indexOf("Kode Tiket");
+    const statusCol = headers.indexOf("Status");
+    const pesananCol = headers.indexOf("Kode Pesanan");
+    
+    if (kodeCol !== -1) {
+      const foundRow = tiketData.find(row => row[kodeCol] === kode);
+      if (foundRow) {
+        // Update status if status column exists and has value
+        if (statusCol !== -1 && foundRow[statusCol]) {
+          status = foundRow[statusCol];
+        }
+        // Update kode pesanan if pesanan column exists and has value
+        if (pesananCol !== -1 && foundRow[pesananCol]) {
+          pesanan = foundRow[pesananCol];
+        }
+      }
+    }
+  }
+  
+  // Log to Histori sheet
+  let sheet = ss.getSheetByName(SHEET_HISTORI);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_HISTORI);
+    sheet.appendRow(["Timestamp", "Kode Tiket", "Jumlah Tiket", "Nama", "Jenis Tiket", "Kode Pesanan", "Status"]);
+  }
+  const ts = Utilities.formatDate(new Date(), "Asia/Jakarta", "dd MMM yyyy, HH:mm:ss");
+  sheet.appendRow([ts, kode, jumlah, nama, jenis, pesanan, status]);
+}
+
+// --- AMBIL HISTORI ---
+function getHistory() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_HISTORI);
+  if (!sheet) return jsonResponse({ status: "success", message: "Tidak ada histori", data: { records: [] } });
+
+  const values = sheet.getDataRange().getValues();
+  if (values.length < 2) return jsonResponse({ status: "success", message: "Tidak ada histori", data: { records: [] } });
+
+  const headers = values.shift().map(h => String(h).trim());
+  const records = values.map(row => {
+    const rec = {};
+    headers.forEach((header, j) => rec[header] = row[j]);
+    return rec;
+  });
+
+  return jsonResponse({ status: "success", message: "Histori ditemukan", data: { records } });
+}
+
+// --- OTS ---
+function getOts(sheetName) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+    if (!sheet) return jsonResponse({ status: "error", message: `Sheet ${sheetName} tidak ditemukan.` });
+
+    const values = sheet.getDataRange().getValues();
+    if (values.length < 2) return jsonResponse({ status: "success", message: "Data OTS kosong", data: { records: [] } });
+
+    const headers = values[0].map(h => String(h).trim());
+    const records = [];
+
+    for (let i = 1; i < values.length; i++) {
+      const row = values[i];
+      const record = {};
+      headers.forEach((header, j) => {
+        record[header] = row[j] !== undefined ? String(row[j]) : '';
+      });
+      if (!record['Status']) record['Status'] = 'Belum Diproses';
+      if (!record['Timestamp']) {
+        record['Timestamp'] = Utilities.formatDate(new Date(), "Asia/Jakarta", "dd/MM/yyyy HH:mm:ss");
+      }
+      records.push(record);
+    }
+
+    return jsonResponse({
+      status: "success",
+      message: "Data OTS berhasil diambil",
+      data: { records }
+    });
+  } catch (err) {
+    Logger.log("Error in getOts: " + err.stack);
+    return jsonResponse({
+      status: "error",
+      message: "Terjadi kesalahan saat mengambil data OTS: " + err.message
+    });
+  }
+}
+
+function updateOts(kodePesanan, status) {
+  try {
+    if (!kodePesanan || !status) {
+      return jsonResponse({ status: "error", message: "Kode Pesanan dan Status diperlukan" });
+    }
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName("TiketOTS");
+    if (!sheet) return jsonResponse({ status: "error", message: "Sheet TiketOTS tidak ditemukan" });
+
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0].map(h => String(h).trim());
+    const kodePesananCol = headers.indexOf("Kode Pesanan");
+    const statusCol = headers.indexOf("Status");
+
+    if (kodePesananCol === -1 || statusCol === -1) {
+      return jsonResponse({ status: "error", message: "Kolom 'Kode Pesanan' atau 'Status' tidak ditemukan" });
+    }
+
+    let rowIndex = -1;
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][kodePesananCol] === kodePesanan) {
+        rowIndex = i + 1;
+        break;
+      }
+    }
+
+    if (rowIndex === -1) {
+      return jsonResponse({ status: "error", message: "Tiket tidak ditemukan" });
+    }
+
+    const newStatus = status === 'approve' ? 'Approved' : 'Rejected';
+    sheet.getRange(rowIndex, statusCol + 1).setValue(newStatus);
+
+    const rowData = data[rowIndex - 1];
+    const nama = rowData[headers.indexOf("Nama")] || '';
+    const jenisTiket = rowData[headers.indexOf("Jenis Tiket")] || '';
+    logHistory(kodePesanan, "", nama, jenisTiket, kodePesanan, newStatus);
+
+    return jsonResponse({ status: "success", message: `Tiket berhasil di${status === 'approve' ? 'setujui' : 'tolak'}` });
+  } catch (err) {
+    console.error("Error in updateOts:", err);
+    return jsonResponse({ status: "error", message: `Terjadi kesalahan: ${err.message}` });
+  }
+}
+
+// --- UTILITY ---
+function jsonResponse(data) {
+  return ContentService.createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}

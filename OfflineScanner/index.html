@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1a1a1a">
+  <title>Dimsprat Scanner</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/x-icon" href="../Assets/images/favicon.ico">
+  <link rel="apple-touch-icon" href="../Assets/images/logo.png">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Orbitron:wght@500;700&display=swap">
+  <link rel="stylesheet" href="../Assets/style.css">
+  <link rel="stylesheet" href="../Assets/js.css">
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" type="text/javascript"></script>
+  <script>
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js')
+          .then(registration => {
+            console.log('ServiceWorker registration successful');
+          })
+          .catch(err => {
+            console.log('ServiceWorker registration failed: ', err);
+          });
+      });
+    }
+
+    // Check if offline
+    window.addEventListener('offline', () => {
+      console.log('Anda sedang offline');
+      // Tampilkan notifikasi offline jika diperlukan
+    });
+  </script>
+<style>
+  /* Global Styles */
+  :root {
+    --primary: #e63946;
+    --secondary: #1d3557;
+    --accent: #ff4d4d;
+    --success: #27ae60;
+    --warn: #f39c12;
+    --danger: #e74c3c;
+    --text: #f8f9fa;
+    --muted: #adb5bd;
+    --bg-dark: #0f172a;
+    --bg-darker: #0b1120;
+    --border: rgba(255, 255, 255, 0.1);
+  }
+  
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: 'Rajdhani', sans-serif;
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+  
+  /* Header Styles */
+  #header {
+    position: sticky;
+    top: 0;
+    left: 0;
+    right: 0;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 1000;
+    transition: all 0.3s ease;
+  }
+  
+  .header-container {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 10px 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .logo-link {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+  
+  .logo-img {
+    height: 40px;
+    width: auto;
+    max-width: 180px;
+    object-fit: contain;
+    transition: transform 0.3s ease, opacity 0.2s ease;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  }
+  
+  .logo-img:hover {
+    transform: scale(1.03);
+  }
+  
+  /* Navigation */
+  nav {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-items: center;
+  }
+  
+  nav button {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #fff;
+    padding: 8px 18px;
+    border-radius: 50px;
+    cursor: pointer;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    white-space: nowrap;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  nav button i {
+    font-size: 1.1em;
+  }
+  
+  nav button:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-1px);
+  }
+  
+  nav button:active {
+    transform: translateY(0);
+  }
+  
+  nav button.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 4px 15px rgba(255, 45, 45, 0.2);
+  }
+  
+  #btnLogout {
+    color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.1);
+    border-color: rgba(255, 107, 107, 0.2);
+  }
+  
+  #btnLogout:hover {
+    background: rgba(255, 107, 107, 0.2);
+  }
+
+  /* Main content */
+  main {
+    flex: 1;
+    padding: 30px 20px;
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  
+  .panel {
+    background: rgba(30, 41, 59, 0.6);
+    padding: 30px;
+    border-radius: 20px;
+    min-width: 320px;
+    max-width: 100%;
+    width: 100%;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .panel::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--accent), #ff9f43);
+    opacity: 0.8;
+  }
+  
+  .panel:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  }
+  .center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    text-align: center;
+  }
+
+  /* Mode selection */
+  .mode-buttons {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 20px 0;
+  }
+  
+  .btn {
+    background: var(--accent);
+    border: none;
+    padding: 12px 28px;
+    border-radius: 50px;
+    color: #fff;
+    cursor: pointer;
+    font-weight: 700;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    letter-spacing: 0.5px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 150px;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+  }
+  
+  .btn::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.1);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: -1;
+  }
+  
+  .btn:hover::after {
+    opacity: 1;
+  }
+  
+  .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 45, 45, 0.3);
+  }
+  
+  .btn:active {
+    transform: translateY(0);
+  }
+  
+  .btn.secondary {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text);
+  }
+  
+  .btn.secondary:hover {
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  }
+  
+  .btn.ghost {
+    background: transparent;
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+    color: var(--muted);
+  }
+  
+  .btn.ghost:hover {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  /* Scanner area */
+  #reader {width:320px;margin:0 auto}
+  .processing{display:flex;align-items:center;gap:10px;color:var(--muted);margin-top:8px}
+  .spinner{width:28px;height:28px;border-radius:50%;border:3px solid rgba(255,255,255,0.08);border-top-color:var(--accent);animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* Modal */
+  .modal{display:none;position:fixed;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0.7),rgba(0,0,0,0.8));backdrop-filter:blur(6px);align-items:center;justify-content:center;z-index:999}
+  .modal.show{display:flex}
+  .modal-card{background:linear-gradient(180deg,#0f1214,#151617);padding:22px;border-radius:14px;min-width:300px;max-width:420px;text-align:center;box-shadow:0 14px 38px rgba(0,0,0,0.6)}
+  .modal-card h1{font-size:48px;margin:0}
+  .modal-card h3{margin:12px 0 8px;font-size:20px}
+  .modal-card p{margin:0;color:var(--muted);white-space:pre-line}
+  .modal-card .actions{display:flex;gap:10px;justify-content:center;margin-top:16px}
+  .chip{display:inline-block;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.03);color:var(--muted);font-size:13px;margin-top:10px}
+
+  /* Table (history) */
+  table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}
+  th,td{padding:10px;border-bottom:1px solid rgba(255,255,255,0.04);text-align:left}
+  th{color:var(--muted);font-weight:600;font-size:13px}
+  tbody tr:hover td{background:rgba(255,255,255,0.01)}
+
+  /* Form Elements */
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="password"],
+  select,
+  textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(15, 23, 42, 0.7);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px;
+    transition: all 0.2s ease;
+  }
+  
+  input:focus,
+  select:focus,
+  textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(255, 77, 77, 0.2);
+  }
+  
+  /* Table Styling */
+  table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 20px 0;
+    font-size: 14px;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  
+  th, td {
+    padding: 14px 16px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  
+  th {
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+  }
+  
+  tbody tr {
+    transition: background-color 0.2s ease;
+  }
+  
+  tbody tr:hover {
+    background: rgba(255, 255, 255, 0.03);
+  }
+  
+  /* Responsive */
+  @media (max-width: 1200px) {
+    .header-container {
+      padding: 10px 16px;
+    }
+    
+    nav {
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+    }
+    
+    .panel {
+      padding: 20px;
+    }
+  }
+  
+  @media (max-width: 992px) {
+    .header-container {
+      padding: 10px 15px;
+    }
+    
+    nav button {
+      padding: 6px 12px;
+      font-size: 14px;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    #header {
+      position: sticky;
+      top: 0;
+    }
+    
+    .header-container {
+      flex-wrap: nowrap;
+      gap: 10px;
+      padding: 8px 12px;
+    }
+    
+    .logo-link {
+      width: auto;
+      justify-content: flex-start;
+      margin-bottom: 0;
+    }
+    
+    .logo-img {
+      height: 36px;
+    }
+    
+    nav {
+      width: auto;
+      justify-content: flex-end;
+      flex: 1;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    
+    nav::-webkit-scrollbar {
+      display: none;
+    }
+    
+    main {
+      padding: 20px 12px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .logo-img {
+      height: 32px;
+    }
+    
+    nav button {
+      padding: 5px 10px;
+      font-size: 13px;
+    }
+    
+    #btnLogout {
+      padding: 5px 8px;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .logo-img {
+      height: 35px;
+    }
+    
+    nav {
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+    }
+    
+    nav button {
+      padding: 6px 10px;
+      font-size: 14px;
+      flex: 1 0 calc(50% - 10px);
+      max-width: 160px;
+      text-align: center;
+      justify-content: center;
+    }
+    
+    #header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 10px;
+      background: rgba(15, 23, 42, 0.98);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+    
+    .header-container {
+      padding: 0 10px;
+    }
+    
+    main {
+      padding: 120px 10px 80px;
+    }
+    
+    .panel {
+      padding: 20px 15px !important;
+      margin: 0 -5px;
+      border-radius: 0;
+    }
+    
+    .btn {
+      padding: 10px 16px;
+      font-size: 15px;
+      min-width: 120px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .panel {
+      padding: 15px 10px !important;
+    }
+    
+    .logo-img {
+      height: 30px !important;
+    }
+    
+    nav button {
+      padding: 8px 6px;
+      font-size: 13px;
+      flex: 1 0 calc(50% - 8px);
+      max-width: none;
+    }
+    
+    .btn {
+      width: 100%;
+      margin-bottom: 8px;
+      padding: 8px 12px;
+      font-size: 13px;
+      min-width: 100px;
+    }
+    
+    .btn.secondary {
+      margin-bottom: 0;
+    }
+    
+    .mode-buttons {
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .mode-buttons .btn {
+      width: 100%;
+      margin: 0;
+    }
+  }
+
+  /* Tambahan status badge */
+  .status-success { color:#27ae60; font-weight:600 }
+  .status-warning { color:#f39c12; font-weight:600 }
+  .status-error { color:#e74c3c; font-weight:600 }
+  
+  /* Action buttons */
+  .action-buttons {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+  }
+  .btn-approve {
+    background: #27ae60;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .btn-approve:disabled {
+    background: #7f8c8d;
+    cursor: not-allowed;
+  }
+  .btn-reject {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .btn-reject:disabled {
+    background: #7f8c8d;
+    cursor: not-allowed;
+  }
+</style>
+</head>
+<body>
+  <!-- Header -->
+  <header id="header">
+    <div class="header-container">
+      <nav>
+        <button id="tabScanner" class="active" onclick="showPage('scanner')"><i>📷</i> Scanner</button>
+        <button id="tabHistory" onclick="showPage('history')"><i>📋</i> Histori</button>
+        <button id="tabOts" onclick="showPage('ots')"><i>📊</i> OTS</button>
+        <button id="btnLogout" onclick="logout()"><i>🚪</i> Logout</button>
+      </nav>
+    </div>
+  </header>
+
+<main>
+  <!-- SCANNER PANEL -->
+  <section id="scanner" class="panel center">
+    <div style="max-width:640px;width:100%;">
+      <h2 style="margin:0 0 8px;font-size:18px">Mode</h2>
+      <div class="mode-buttons" id="modeSelection">
+        <button class="btn" onclick="enterCameraMode()">📷 Scan QR</button>
+        <button class="btn secondary" onclick="enterManualMode()">⌨️ Input Manual</button>
+      </div>
+
+      <!-- camera area -->
+      <div id="cameraArea" style="display:none;margin-top:14px;" class="center">
+        <div id="reader"></div>
+        <div class="processing" id="procCamera" style="display:none"><div class="spinner"></div><div>Memproses...</div></div>
+        <div style="margin-top:12px;">
+          <button class="btn ghost" onclick="stopScanner()">Stop Camera</button>
+        </div>
+      </div>
+
+      <!-- manual area -->
+      <div id="manualArea" style="display:none;margin-top:14px;" class="center">
+        <input id="manualInput" type="text" placeholder="Masukkan ID tiket / Kode QR" style="padding:12px;border-radius:10px;border:1px solid #222;width:100%;max-width:420px;background:#0b0c0d;color:#fff">
+        <div style="margin-top:12px;">
+          <button class="btn" onclick="submitManual()">Check-In</button>
+          <button class="btn secondary" onclick="backToMode()">Batal</button>
+        </div>
+        <div class="processing" id="procManual" style="display:none"><div class="spinner"></div><div>Memproses...</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HISTORY PANEL -->
+  <section id="history" class="panel" style="display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h2 style="margin:0;font-size:18px">Histori Check-in</h2>
+      <div>
+        <button class="btn" onclick="loadHistory()">🔄 Refresh</button>
+        <button class="btn secondary" onclick="exportCSV()">⬇ Export CSV</button>
+      </div>
+    </div>
+
+    <div style="margin-top:12px;overflow:auto">
+      <table>
+        <thead><tr><th>Timestamp</th><th>Nama</th><th>Jumlah</th><th>Jenis Tiket</th><th>Status</th><th>QR Code</th><th>Kode Pesanan</th></tr></thead>
+        <tbody id="historyBody"><tr><td colspan="6">Klik Refresh untuk memuat histori...</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+    <!-- OTS PANEL -->
+    <section id="ots" class="panel" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h2 style="margin:0;font-size:18px">OTS Tiket</h2>
+        <div>
+          <button class="btn" onclick="loadOts()">🔄 Refresh</button>
+          <button class="btn secondary" onclick="exportCSV()">⬇ Export CSV</button>
+        </div>
+      </div>
+  
+      <div style="margin-top:12px;overflow:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Nama</th>
+              <th>Jumlah</th>
+              <th>Jenis Tiket</th>
+              <th>Kode Pesanan</th>
+              <th>Status</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="otsBody">
+            <tr><td colspan="6">Klik Refresh untuk memuat Tiket Ots...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+</main>
+
+<style>
+  /* Footer */
+  footer {
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    padding: 15px 0;
+    margin-top: 30px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .logo-link {
+    display: block;
+    padding: 5px 0;
+    transition: opacity 0.2s ease;
+  }
+  
+  .logo-link:hover {
+    opacity: 0.8;
+  }
+  
+  @media (max-width: 480px) {
+    footer {
+      padding: 12px 0;
+      margin-top: 20px;
+    }
+  }
+</style>
+
+<footer>
+  <a href="../index.html" class="logo-link">
+    <img src="../Assets/images/logo.webp" alt="Dimsprat" class="logo-img" style="height: 25px;">
+  </a>
+</footer>
+
+<!-- Modal (no auto-close) -->
+<div id="resultModal" class="modal">
+  <div class="modal-card" id="modalCard">
+    <h1 id="modalIcon">❌</h1>
+    <h3 id="modalTitle">Judul</h3>
+    <p id="modalMessage">Pesan</p>
+    <div class="chip" id="modalSub"></div>
+    <div class="actions">
+      <button class="btn secondary" onclick="closeModal()">Tutup</button>
+    </div>
+  </div>
+</div>
+
+<!-- Audio -->
+<!-- Audio files for feedback -->
+<audio id="sndValid" src="data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU..." preload="auto"></audio>
+<audio id="sndUsed" src="data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU..." preload="auto"></audio>
+<audio id="sndInvalid" src="data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU..." preload="auto"></audio>
+
+<!-- Offline notification -->
+<div id="offline-notification" style="display: none; position: fixed; bottom: 20px; right: 20px; background: #e63946; color: white; padding: 10px 20px; border-radius: 5px; z-index: 1000;">
+  Mode Offline - Data akan disimpan secara lokal
+</div>
+
+<script>
+  // Cek status koneksi
+  function updateOnlineStatus() {
+    const offlineNotification = document.getElementById('offline-notification');
+    if (!navigator.onLine) {
+      offlineNotification.style.display = 'block';
+      // Sembunyikan notifikasi setelah 5 detik
+      setTimeout(() => {
+        offlineNotification.style.display = 'none';
+      }, 5000);
+    } else {
+      offlineNotification.style.display = 'none';
+      // Sinkronisasi data jika online
+      syncLocalData();
+    }
+  }
+
+  // Update status saat online/offline
+  window.addEventListener('online', updateOnlineStatus);
+  window.addEventListener('offline', updateOnlineStatus);
+  updateOnlineStatus(); // Periksa status saat pertama kali dimuat
+</script>
+
+<script>
+/* ==== CONFIG: ganti URL WEBAPP GAS di bawah ==== */
+const SHEET_API = "https://script.google.com/macros/s/AKfycbyiFqaZL3D0MY5xfxQEiDy-OVP02EUGKvI95Ea0qiADP9cb1e7LVqNxoUndxT-IBZ6k/exec"; // contoh: https://script.google.com/macros/s/AKfycbXXXX/exec
+/* ============================================== */
+
+/* --- Check Login & Logout -- */
+if(localStorage.getItem("panitiaLogin") !== "true"){
+  window.location.href = "login.html";
+}
+
+async function logout() {
+  const user = localStorage.getItem("panitiaUser");
+  const session = localStorage.getItem("panitiaSession");
+  
+  // Show loading state
+  const logoutBtn = document.querySelector('button[onclick="logout()"]');
+  const originalText = logoutBtn.innerHTML;
+  logoutBtn.disabled = true;
+  logoutBtn.innerHTML = '<div class="spinner" style="width:16px;height:16px;margin:0 auto"></div>';
+
+  try {
+    // Call backend to clear session
+    let response;
+    if (user && session) {
+      const url = `${SHEET_API}?action=logout&username=${encodeURIComponent(user)}&sessionID=${encodeURIComponent(session)}`;
+      console.log('Logout URL:', url);
+      response = await fetch(url);
+      const result = await response.json();
+      console.log('Logout response:', result);
+      
+      if (result.status === 'error') {
+        console.error('Logout error:', result.message);
+        // Continue with local logout even if server logout fails
+      }
+    }
+    
+    // Clear all local storage
+    localStorage.removeItem("panitiaLogin");
+    localStorage.removeItem("panitiaUser");
+    localStorage.removeItem("panitiaSession");
+    
+    // Redirect to login page
+    window.location.href = "login.html";
+    
+  } catch (error) {
+    console.error('Logout failed:', error);
+    // Even if there's an error, still clear local storage and redirect
+    localStorage.removeItem("panitiaLogin");
+    localStorage.removeItem("panitiaUser");
+    localStorage.removeItem("panitiaSession");
+    window.location.href = "login.html";
+  } finally {
+    // Reset button state (though we're redirecting, this is good practice)
+    if (logoutBtn) {
+      logoutBtn.disabled = false;
+      logoutBtn.innerHTML = originalText;
+    }
+  }
+}
+/* -------------------------- */
+
+let qrScanner = null;
+const sndValid = document.getElementById('sndValid');
+const sndUsed = document.getElementById('sndUsed');
+const sndInvalid = document.getElementById('sndInvalid');
+
+/* ---------- Page switching ---------- */
+function showPage(page){
+  document.getElementById('scanner').style.display = page==='scanner' ? 'block' : 'none';
+  document.getElementById('history').style.display = page==='history' ? 'block' : 'none';
+  document.getElementById('ots').style.display = page==='ots' ? 'block' : 'none';
+  document.getElementById('tabScanner').classList.toggle('active', page==='scanner');
+  document.getElementById('tabHistory').classList.toggle('active', page==='history');
+  document.getElementById('tabOts').classList.toggle('active', page==='ots');
+  if(page==='history') loadHistory();
+  if(page==='ots') loadOts();
+}
+window.showPage = showPage;
+
+/* ---------- Modes ---------- */
+function enterCameraMode(){
+  document.getElementById('modeSelection').style.display = 'none';
+  document.getElementById('cameraArea').style.display = 'block';
+  startScanner();
+}
+function enterManualMode(){
+  document.getElementById('modeSelection').style.display = 'none';
+  document.getElementById('manualArea').style.display = 'block';
+  document.getElementById('manualInput').focus();
+}
+function backToMode(){
+  stopScanner();
+  document.getElementById('modeSelection').style.display = 'flex';
+  document.getElementById('cameraArea').style.display = 'none';
+  document.getElementById('manualArea').style.display = 'none';
+  document.getElementById('manualInput').value = '';
+}
+
+/* ---------- Scanner (html5-qrcode) ---------- */
+async function startScanner(){
+  const reader = document.getElementById('reader');
+  document.getElementById('procCamera').style.display = 'none';
+  qrScanner = new Html5Qrcode("reader");
+  try {
+    await qrScanner.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: {width:260,height:260} },
+      qrMessage => {
+        // saat QR terbaca → hentikan scanner, proses
+        stopScanner();
+        validateCode(qrMessage);
+      }
+    );
+  } catch (err) {
+    alert('Gagal akses kamera: ' + err);
+    backToMode();
+  }
+}
+function stopScanner(){
+  if(qrScanner){
+    qrScanner.stop().then(()=>qrScanner.clear()).catch(()=>{});
+    qrScanner = null;
+  }
+}
+
+/* ---------- Manual submit ---------- */
+function submitManual(){
+  const code = document.getElementById('manualInput').value.trim();
+  if(!code) return alert('Masukkan kode tiket!');
+  validateCode(code);
+}
+
+/* ---------- Validate (call GAS) ---------- */
+function validateCode(code){
+  // show processing in both modes
+  document.getElementById('procCamera').style.display = 'block';
+  document.getElementById('procManual').style.display = 'block';
+
+  // call: ?action=validate&code=...
+  fetch(`${SHEET_API}?action=validate&code=${encodeURIComponent(code)}`)
+    .then(r=>r.json())
+    .then(res=>{
+      document.getElementById('procCamera').style.display = 'none';
+      document.getElementById('procManual').style.display = 'none';
+
+      if(res.status === 'success'){
+        playSound('valid');
+        showResultModal('success','✅ Check-in Berhasil', `Nama: ${res.data.nama}\nJenis: ${res.data.jenis_tiket}\nJumlah: ${res.data.jumlah_tiket}\nOrder: ${res.data.kode_pesanan}`);
+      } else if(res.status === 'warning'){
+        playSound('used');
+        showResultModal('warning','⚠️ Sudah Terpakai', `Nama: ${res.data.nama}\nJenis: ${res.data.jenis_tiket}\nJumlah: ${res.data.jumlah_tiket}\nWaktu: ${res.data.waktu_checkin || '-'}`);
+      } else {
+        playSound('invalid');
+        showResultModal('error','❌ Gagal', res.message || 'Tiket tidak valid');
+      }
+    })
+    .catch(err=>{
+      document.getElementById('procCamera').style.display = 'none';
+      document.getElementById('procManual').style.display = 'none';
+      playSound('invalid');
+      showResultModal('error','❌ Error', 'Gagal menghubungkan ke server: ' + err.message);
+    });
+}
+
+/* ---------- Modal (no auto-close) ---------- */
+function showResultModal(type,title,msg){
+  const modal = document.getElementById('resultModal');
+  const card = document.getElementById('modalCard');
+  const icon = document.getElementById('modalIcon');
+  const t = document.getElementById('modalTitle');
+  const m = document.getElementById('modalMessage');
+  const sub = document.getElementById('modalSub');
+
+  t.innerText = title; m.innerText = msg;
+  sub.innerText = formatWIB(new Date());
+  card.className = 'modal-card';
+  if(type==='success'){ icon.innerText='✅'; card.style.border=`2px solid ${getComputedStyle(document.documentElement).getPropertyValue('--success') || '#27ae60'}`; }
+  else if(type==='warning'){ icon.innerText='⚠'; card.style.border=`2px solid ${getComputedStyle(document.documentElement).getPropertyValue('--warn') || '#f39c12'}`; }
+  else { icon.innerText='❌'; card.style.border=`2px solid ${getComputedStyle(document.documentElement).getPropertyValue('--danger') || '#e74c3c'}`; }
+
+  modal.classList.add('show');
+}
+
+/* modal close returns to main mode selection */
+function closeModal(){
+  const modal = document.getElementById('resultModal');
+  modal.classList.remove('show');
+  backToMode();
+}
+
+/* play sound by type */
+function playSound(type){
+  try{
+    if(type==='valid') sndValid.play();
+    else if(type==='used') sndUsed.play();
+    else sndInvalid.play();
+  }catch(e){}
+}
+
+/* Format ke Waktu Indonesia Barat */
+function formatWIB(dateString){
+  try{
+    const date = new Date(dateString);
+    const optionsDate = { 
+      timeZone: "Asia/Jakarta",
+      day: "numeric", month: "long", year: "numeric"
+    };
+    const optionsTime = { 
+      timeZone: "Asia/Jakarta",
+      hour: "2-digit", minute: "2-digit", second: "2-digit",
+      hour12: false 
+    };
+    const tanggal = new Intl.DateTimeFormat("id-ID", optionsDate).format(date);
+    const jam = new Intl.DateTimeFormat("id-ID", optionsTime).format(date).replace(/:/g,".");
+    return `${jam} WIB ${tanggal}`;
+  } catch(e) {
+    return dateString;
+  }
+}
+
+/* ---------- History Functions ---------- */
+function loadHistory() {
+  const body = document.getElementById('historyBody');
+  body.innerHTML = `<tr><td colspan="5">⏳ Memuat histori...</td></tr>`;
+  
+  fetch(`${SHEET_API}?action=history`)
+    .then(r => r.json())
+    .then(res => {
+      if (res.status === 'success' && res.data && Array.isArray(res.data.records)) {
+        const rows = res.data.records;
+        if (rows.length === 0) {
+          body.innerHTML = `<tr><td colspan="6">Belum ada riwayat</td></tr>`;
+          return;
+        }
+        
+        body.innerHTML = rows.reverse().map(r => {
+          const statusText = (r['Status'] || '').toLowerCase();
+          let statusClass = '';
+          if (statusText.includes('berhasil') || statusText.includes('approved')) {
+            statusClass = 'status-success';
+          } else if (statusText.includes('terpakai') || statusText.includes('rejected')) {
+            statusClass = 'status-error';
+          } else {
+            // Default to warning color for other statuses
+            statusClass = 'status-warning';
+          }
+          
+          const qrCode = r['Kode Tiket'] || '';  // Mengambil kode tiket untuk QR
+          const jumlahTiket = r['Jumlah Tiket'] || '1';  // Default 1 jika kosong
+          
+          return `
+            <tr>
+              <td>${formatWIB(r['Timestamp'] || '')}</td>
+              <td>${escapeHtml(r['Nama'] || '')}</td>
+              <td>${escapeHtml(jumlahTiket)}</td>
+              <td>${escapeHtml(r['Jenis Tiket'] || '')}</td>
+              <td class="${statusClass}">${escapeHtml(r['Status'] || '')}</td>
+              <td>${qrCode ? `<div style="width: 60px; height: 60px; margin: 0 auto; display: flex; align-items: center; justify-content: center;">${escapeHtml(qrCode)}</div>` : '-'}</td>
+              <td>${escapeHtml(r['Kode Pesanan'] || '')}</td>
+            </tr>
+          `;
+        }).join('');
+      } else {
+        body.innerHTML = `<tr><td colspan="6">Gagal memuat histori</td></tr>`;
+      }
+    })
+    .catch(err => {
+      console.error('Error loading history:', err);
+      body.innerHTML = `<tr><td colspan="6">Error: ${escapeHtml(err.message)}</td></tr>`;
+    });
+}
+
+/* ---------- OTS Functions ---------- */
+function updateOtsStatus(kodePesanan, action) {
+  if (!confirm(`Apakah Anda yakin ingin ${action} tiket ini?`)) return;
+  
+  fetch(`${SHEET_API}?action=updateOts&kodePesanan=${encodeURIComponent(kodePesanan)}&status=${action}`)
+    .then(r => r.json())
+    .then(res => {
+      if (res.status === 'success') {
+        showResultModal('success', 'Berhasil', `Tiket berhasil di${action === 'approve' ? 'setujui' : 'tolak'}`);
+        loadOts(); // Refresh the OTS list
+      } else {
+        showResultModal('error', 'Gagal', res.message || 'Gagal memperbarui status tiket');
+      }
+    })
+    .catch(err => {
+      showResultModal('error', 'Error', 'Terjadi kesalahan saat memproses permintaan');
+      console.error('Error updating OTS status:', err);
+    });
+}
+
+function loadOts() {
+  const body = document.getElementById('otsBody');
+  body.innerHTML = `<tr><td colspan="6">⏳ Memuat Tiket OTS...</td></tr>`;
+  
+  fetch(`${SHEET_API}?action=ots&sheet=TiketOTS`)
+    .then(r => r.json())
+    .then(res => {
+      if (res.status === 'success' && res.data && Array.isArray(res.data.records)) {
+        const rows = res.data.records;
+        if (rows.length === 0) {
+          body.innerHTML = `<tr><td colspan="6">Belum ada tiket OTS</td></tr>`;
+          return;
+        }
+        
+        body.innerHTML = rows.reverse().map(r => {
+          const status = r['Status'] || '';
+          const statusText = status.toLowerCase();
+          let statusClass = '';
+          
+          if (statusText.includes('approved')) {
+            statusClass = 'status-success';
+          } else if (statusText === 'belum diproses' || statusText === '') {
+            statusClass = 'status-warning';
+          } else if (statusText.includes('rejected')) {
+            statusClass = 'status-error';
+          } else {
+            // Default to warning for other statuses
+            statusClass = 'status-warning';
+          }
+          
+          return `
+            <tr>
+              <td>${formatWIB(r['Timestamp'] || '')}</td>
+              <td>${escapeHtml(r['Nama'] || '')}</td>
+              <td>${escapeHtml(r['Jumlah Tiket'] || '')}</td>
+              <td>${escapeHtml(r['Jenis Tiket'] || '')}</td>
+              <td>${escapeHtml(r['Kode Pesanan'] || '')}</td>
+              <td class="${statusClass}">${escapeHtml(r['Status'] || '')}</td>
+              <td class="action-buttons">
+                <button class="btn-approve" onclick="updateOtsStatus('${escapeHtml(r['Kode Pesanan'] || '')}', 'approve')" ${r['Status'] === 'Approved' || r['Status'] === 'Rejected' ? 'disabled' : ''}>
+                  Approve
+                </button>
+                <button class="btn-reject" onclick="updateOtsStatus('${escapeHtml(r['Kode Pesanan'] || '')}', 'reject')" ${r['Status'] === 'Approved' || r['Status'] === 'Rejected' ? 'disabled' : ''}>
+                  Reject
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } else {
+        body.innerHTML = `<tr><td colspan="7">Gagal memuat Tiket OTS. ${res.message || ''}</td></tr>`;
+      }
+    })
+    .catch(err => {
+      console.error('Error loading OTS:', err);
+      body.innerHTML = `<tr><td colspan="6">Error: ${escapeHtml(err.message)}</td></tr>`;
+    });
+}
+
+/* Export CSV dari histori di front-end */
+function exportCSV(){
+  fetch(`${SHEET_API}?action=history`).then(r=>r.json()).then(res=>{
+    if(!(res.status==='success' && res.data && Array.isArray(res.data.records))){
+      return alert('Gagal memuat histori untuk export');
+    }
+    const rows = res.data.records;
+    if(rows.length===0) return alert('Belum ada histori');
+    const header = Object.keys(rows[0]);
+    const csv = [header.join(',')].concat(rows.map(r=> header.map(h=> `"${(r[h]||'').toString().replace(/"/g,'""')}"`).join(','))).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `histori_checkin_${Date.now()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  }).catch(e=>alert('Error export: '+e.message));
+}
+
+/* Export CSV dari ots di front-end */
+function exportCSV(){
+  fetch(`${SHEET_API}?action=ots`).then(r=>r.json()).then(res=>{
+    if(!(res.status==='success' && res.data && Array.isArray(res.data.records))){
+      return alert('Gagal memuat histori untuk export');
+    }
+    const rows = res.data.records;
+    if(rows.length===0) return alert('Belum ada histori');
+    const header = Object.keys(rows[0]);
+    const csv = [header.join(',')].concat(rows.map(r=> header.map(h=> `"${(r[h]||'').toString().replace(/"/g,'""')}"`).join(','))).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `histori_checkin_${Date.now()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  }).catch(e=>alert('Error export: '+e.message));
+}
+
+
+/* small helper */
+function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* Keyboard: Enter submit manual, ESC close modal */
+document.addEventListener('keydown', (e)=>{
+  if(e.key==='Enter' && document.getElementById('manualArea').style.display!=='none'){
+    submitManual();
+  }
+  if(e.key==='Escape' && document.getElementById('resultModal').classList.contains('show')){
+    closeModal();
+  }
+});
+</script>
+</body>
+</html>
