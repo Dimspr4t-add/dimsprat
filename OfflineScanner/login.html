@@ -148,84 +148,112 @@
         </div>
     </div>
 
-    <script>
-        /* ==== CONFIG ==== */
-        const LOGIN_API = "https://script.google.com/macros/s/AKfycbyiFqaZL3D0MY5xfxQEiDy-OVP02EUGKvI95Ea0qiADP9cb1e7LVqNxoUndxT-IBZ6k/exec";
+<script>
+/* ==== CONFIG ==== */
+const LOGIN_API = "https://script.google.com/macros/s/AKfycbyiFqaZL3D0MY5xfxQEiDy-OVP02EUGKvI95Ea0qiADP9cb1e7LVqNxoUndxT-IBZ6k/exec"; 
+/* ================ */
 
-        // PWA Register (Agar halaman ini ter-cache untuk offline)
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
+if (localStorage.getItem("panitiaLogin") === "true") window.location.href = "index.html";
+
+// Register SW di halaman login juga agar file ter-cache
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(console.log);
+}
+
+// --- DATABASE HELPER (Versi Mini untuk Login) ---
+const dbName = "DimspratDB_V3"; // Harus sama dengan index.html
+const storeUsers = "users";
+
+const IDB_LOGIN = {
+  get: (key) => new Promise((resolve, reject) => {
+    const req = indexedDB.open(dbName, 3);
+    req.onsuccess = (e) => {
+      const db = e.target.result;
+      if(!db.objectStoreNames.contains(storeUsers)) return resolve(null);
+      const tx = db.transaction(storeUsers, "readonly");
+      const res = tx.objectStore(storeUsers).get(key);
+      res.onsuccess = () => resolve(res.result);
+      res.onerror = () => resolve(null);
+    };
+    req.onerror = () => resolve(null); // DB belum ada/error
+  })
+};
+
+const usernameInput = document.getElementById("username");
+const passwordInput = document.getElementById("password");
+const loginBtn = document.getElementById("loginBtn");
+const btnText = document.getElementById("btnText");
+const loader = document.getElementById("loader");
+const err = document.getElementById("errorMsg");
+
+async function login(){
+  const u = usernameInput.value.trim();
+  const p = passwordInput.value.trim();
+  err.textContent = "";
+
+  if(!u || !p){ err.textContent = "Isi semua kolom."; return; }
+
+  // UI Loading
+  loginBtn.disabled = true;
+  btnText.textContent = "Memproses...";
+  loader.style.display = 'block';
+
+  try {
+    // 1. COBA LOGIN ONLINE
+    if(navigator.onLine){
+        const res = await fetch(`${LOGIN_API}?action=login&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}`);
+        const data = await res.json();
+        
+        if(data.status === "success"){
+          loginSuccess(u, data.sessionID);
+          return;
+        } else {
+          throw new Error(data.message || "Login Gagal");
         }
+    } else {
+        throw new Error("Offline");
+    }
 
-        // Cek Login Lokal (Agar saat Offline tetap bisa masuk jika pernah login)
-        if (localStorage.getItem("panitiaLogin") === "true") {
-            window.location.href = "index.html";
+  } catch(e) {
+    console.log("Online login failed/offline:", e);
+    
+    // 2. FALLBACK LOGIN OFFLINE
+    try {
+        const userLocal = await IDB_LOGIN.get(u);
+        if(userLocal && userLocal.p === p){
+            // Password cocok dengan database lokal
+            loginSuccess(u, "OFFLINE_SESSION");
+        } else {
+             err.textContent = (e.message === "Offline") ? 
+               "Offline: User tidak ditemukan di HP. Login online dulu sekali." : 
+               "Username / Password Salah.";
+             resetBtn();
         }
+    } catch (dbErr) {
+        err.textContent = "Gagal akses database HP. Pastikan sudah pernah login online.";
+        resetBtn();
+    }
+  }
+}
 
-        const usernameInput = document.getElementById("username");
-        const passwordInput = document.getElementById("password");
-        const loginBtn = document.getElementById("loginBtn");
-        const btnText = document.getElementById("btnText");
-        const loader = document.getElementById("loader");
-        const err = document.getElementById("errorMsg");
+function loginSuccess(user, session){
+    localStorage.setItem("panitiaLogin","true");
+    localStorage.setItem("panitiaUser", user);
+    localStorage.setItem("panitiaSession", session);
+    window.location.href = "index.html";
+}
 
-        async function login() {
-            const u = usernameInput.value.trim();
-            const p = passwordInput.value.trim();
-            err.textContent = "";
+function resetBtn(){
+    loginBtn.disabled = false;
+    btnText.textContent = "Masuk";
+    loader.style.display = 'none';
+}
 
-            if (!u || !p) return err.textContent = "Masukkan username dan password.";
-
-            // Cek koneksi: Login pertama kali WAJIB Online
-            if (!navigator.onLine) return err.textContent = "Butuh internet untuk login pertama kali.";
-
-            loginBtn.disabled = true;
-            btnText.textContent = "Memproses...";
-            loader.style.display = 'block';
-
-            try {
-                const res = await fetch(`${LOGIN_API}?action=login&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}`);
-                const data = await res.json();
-
-                if (data.status === "success") {
-                    // Simpan sesi permanen di HP
-                    localStorage.setItem("panitiaLogin", "true");
-                    localStorage.setItem("panitiaUser", u);
-                    localStorage.setItem("panitiaSession", data.sessionID);
-                    window.location.href = "index.html";
-                } else {
-                    err.textContent = data.message || "Gagal Login (Cek User/Pass).";
-                }
-            } catch (e) {
-                err.textContent = "Gagal koneksi server / Sinyal buruk.";
-            } finally {
-                loginBtn.disabled = false;
-                btnText.textContent = "Masuk";
-                loader.style.display = 'none';
-            }
-        }
-
-        /* --- EVENT LISTENER TOMBOL ENTER --- */
-        // Saat tekan Enter di Username -> Pindah ke Password (opsional) atau Login
-        usernameInput.addEventListener("keyup", function(event) {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                if (passwordInput.value === "") {
-                    passwordInput.focus(); // Pindah ke password jika masih kosong
-                } else {
-                    login(); // Langsung login jika password sudah ada
-                }
-            }
-        });
-
-        // Saat tekan Enter di Password -> Langsung Login
-        passwordInput.addEventListener("keyup", function(event) {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                login();
-            }
-        });
-    </script>
+// Enter Key Support
+[usernameInput, passwordInput].forEach(inp => {
+    inp.addEventListener("keyup", (e) => { if(e.key==="Enter") login(); });
+});
+</script>
 </body>
 
 </html>
