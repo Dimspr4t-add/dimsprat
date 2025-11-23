@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Login Panitia</title>
+<link rel="icon" type="image/x-icon" href="../Assets/images/favicon.ico">
+
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../Assets/style.css">
+<link rel="stylesheet" href="../Assets/js.css">
+<style>
+
+  /* Add a container for the login content */
+  .login-container {
+    width: 100%;
+    max-width: 500px;
+    padding: 20px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+  }
+  
+  /* Card styles */
+  .card {
+    background: rgba(21, 23, 26, 0.95);
+    padding: 40px 30px;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 400px;
+    margin: 0;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    transform: translateY(0);
+  }
+  
+  .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .login-container {
+      padding: 10px;
+      width: 100%;
+    }
+    
+    .card {
+      padding: 30px 20px;
+      max-width: 100%;
+      margin: 0;
+    }
+    
+    header {
+      padding: 12px 15px;
+      position: sticky;
+      top: 0;
+    }
+    
+    .logo {
+      height: 32px;
+      max-width: 80%;
+      object-fit: contain;
+    }
+    
+    /* Extra small devices */
+    @media (max-width: 480px) {
+      header {
+        padding: 8px 10px;
+        position: fixed;
+        top: 0;
+      }
+      
+      .logo {
+        height: 28px;
+      }
+      
+      .login-container {
+        padding: 60px 15px 20px;
+      }
+      
+      .card {
+        padding: 25px 15px;
+        border-radius: 12px;
+      }
+    }
+    
+    /* Very small devices */
+    @media (max-width: 360px) {
+      .logo {
+        height: 24px;
+      }
+    }
+  }
+  /* Form elements */
+  h1 { 
+    margin: 0 0 25px; 
+    font-size: 24px;
+    color: #fff;
+    font-weight: 600;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  
+  input {
+    width: 100%;
+    padding: 12px 15px;
+    margin-bottom: 18px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.4);
+    color: #fff;
+    font-size: 15px;
+    font-family: 'Rajdhani', sans-serif;
+    transition: all 0.3s ease;
+  }
+  
+  input:focus {
+    outline: none;
+    border-color: #ff2d2d;
+    box-shadow: 0 0 0 2px rgba(255, 45, 45, 0.2);
+  }
+  
+  button {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 6px;
+    background: #ff2d2d;
+    color: #fff;
+    font-weight: 700;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  
+  button:hover:not(:disabled) {
+    background: #e60000;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 45, 45, 0.3);
+  }
+  
+  button:active:not(:disabled) {
+    transform: translateY(0);
+  }
+  
+  button:disabled {
+    background: #555;
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+  
+  .spinner {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  
+  .error {
+    color: #ff4d4d;
+    font-size: 14px;
+    margin-top: 10px;
+    min-height: 18px;
+    text-align: center;
+    font-weight: 500;
+  }
+</style>
+</head>
+<body>
+<!-- Header -->
+<header id="header">
+  <div class="header-container">
+      <a href="/" class="logo-link">
+          <img src="../Assets/images/logo.webp" alt="Dimsprat Logo" class="logo-img">
+      </a>
+  </div>
+</header>
+  
+  <div class="login-container">
+    <div class="card">
+      <h1>Login Scanning</h1>
+      <input type="text" id="username" placeholder="Username">
+      <input type="password" id="password" placeholder="Password">
+      <button id="loginBtn" onclick="login()">
+        <span id="btnText">Masuk</span>
+        <div class="spinner" id="loader" style="display:none;"></div>
+      </button>
+      <div class="error" id="errorMsg"></div>
+    </div>
+  </div>
+
+<script>
+/* 
+  ==================================================================
+  GANTI URL DI BAWAH INI dengan URL Web App dari Google Apps Script
+  ==================================================================
+*/
+const LOGIN_API = "https://script.google.com/macros/s/AKfycbyiFqaZL3D0MY5xfxQEiDy-OVP02EUGKvI95Ea0qiADP9cb1e7LVqNxoUndxT-IBZ6k/exec"; 
+
+// Cek jika sudah login, langsung redirect
+if (localStorage.getItem("panitiaLogin") === "true") {
+  window.location.href = "index.html";
+}
+
+const usernameInput = document.getElementById("username");
+const passwordInput = document.getElementById("password");
+const loginBtn = document.getElementById("loginBtn");
+const btnText = document.getElementById("btnText");
+const loader = document.getElementById("loader");
+const err = document.getElementById("errorMsg");
+
+async function login(){
+  const u = usernameInput.value.trim();
+  const p = passwordInput.value.trim();
+  err.textContent = "";
+
+  if(!u || !p){
+    err.textContent = "Masukkan username dan password.";
+    return;
+  }
+
+  // Tampilkan loader dan disable tombol
+  loginBtn.disabled = true;
+  btnText.textContent = "Memproses...";
+  loader.style.display = 'block';
+
+  try {
+    const res = await fetch(`${LOGIN_API}?action=login&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}`);
+    const data = await res.json();
+    if(data.status === "success"){
+      localStorage.setItem("panitiaLogin","true");
+      localStorage.setItem("panitiaUser", u);
+      localStorage.setItem("panitiaSession", data.sessionID);
+      window.location.href = "index.html";
+    } else {
+      err.textContent = data.message || "Username / Password salah.";
+    }
+  } catch(e){
+    err.textContent = "Gagal menghubungkan ke server.";
+  } finally {
+    // Kembalikan tombol ke state semula
+    loginBtn.disabled = false;
+    btnText.textContent = "Masuk";
+    loader.style.display = 'none';
+  }
+}
+
+// Tambahkan event listener untuk tombol Enter
+passwordInput.addEventListener("keyup", function(event) {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    login();
+  }
+});
+usernameInput.addEventListener("keyup", function(event) {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    login();
+  }
+});
+
+</script>
+</body>
+</html>
