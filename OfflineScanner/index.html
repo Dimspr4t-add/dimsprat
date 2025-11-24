@@ -709,376 +709,451 @@
 <audio id="sndInvalid" src="https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg" preload="auto"></audio>
 
 <script>
-/* ==== CONFIG ==== */
-const SHEET_API = "https://script.google.com/macros/s/AKfycbyiFqaZL3D0MY5xfxQEiDy-OVP02EUGKvI95Ea0qiADP9cb1e7LVqNxoUndxT-IBZ6k/exec"; 
-/* ================ */
+      /* ===============================================================
+  KONFIGURASI & LOGIKA UTAMA (OFFLINE-FIRST)
+  =============================================================== */
 
-if(localStorage.getItem("panitiaLogin") !== "true") window.location.href = "login.html";
+      // GANTI URL DI BAWAH INI DENGAN URL DEPLOYMENT TERBARU ANDA
+      const SHEET_API = "https://script.google.com/macros/s/AKfycbyiFqaZL3D0MY5xfxQEiDy-OVP02EUGKvI95Ea0qiADP9cb1e7LVqNxoUndxT-IBZ6k/exec";
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(console.log);
-}
+      // 1. Cek Login & Service Worker
+      if (localStorage.getItem("panitiaLogin") !== "true") window.location.href = "login.html";
+      if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(console.log);
 
-/* --- DATABASE OFFLINE (IndexedDB) --- */
-const dbName = "DimspratDB_V3"; // NAIK KE V3
-const storeTickets = "tickets";
-const storeHistory = "history";
-const storeOts     = "ots";
-const storeQueue   = "syncQueue"; 
-const storeUsers   = "users"; // Store Baru
+      // 2. Database IndexedDB Wrapper (Versi 4)
+      const dbName = "DimspratDB_V4";
+      const storeTickets = "tickets"; // Data Tiket Master
+      const storeHistory = "history"; // Log Histori Semua Scan
+      const storeOts = "ots"; // Data OTS
+      const storeQueue = "syncQueue"; // Antrian Upload
+      const storeUsers = "users"; // Data User Login
 
-const IDB = {
-  open: () => new Promise((resolve, reject) => {
-    const req = indexedDB.open(dbName, 3); // Versi 3
-    req.onupgradeneeded = (e) => {
-      const db = e.target.result;
-      if (!db.objectStoreNames.contains(storeTickets)) db.createObjectStore(storeTickets, { keyPath: "c" });
-      if (!db.objectStoreNames.contains(storeHistory)) db.createObjectStore(storeHistory, { keyPath: "id", autoIncrement: true });
-      if (!db.objectStoreNames.contains(storeOts))     db.createObjectStore(storeOts,     { keyPath: "id", autoIncrement: true });
-      if (!db.objectStoreNames.contains(storeQueue))   db.createObjectStore(storeQueue,   { keyPath: "type_id" });
-      if (!db.objectStoreNames.contains(storeUsers))   db.createObjectStore(storeUsers,   { keyPath: "u" }); // Key = username
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  }),
-  // ... (fungsi put, getAll, get, clear, putBulk SAMA SEPERTI SEBELUMNYA, tidak perlu diubah) ...
-  // Pastikan copy-paste helper IDB yang lengkap dari jawaban sebelumnya
-  put: (store, item) => IDB.open().then(db => {
-    const tx = db.transaction(store, "readwrite");
-    tx.objectStore(store).put(item);
-    return new Promise(resolve => tx.oncomplete = resolve);
-  }),
-  getAll: (store) => IDB.open().then(db => {
-    return new Promise(resolve => {
-      const tx = db.transaction(store, "readonly");
-      const req = tx.objectStore(store).getAll();
-      req.onsuccess = () => resolve(req.result);
-    });
-  }),
-  get: (store, key) => IDB.open().then(db => {
-    return new Promise(resolve => {
-      const tx = db.transaction(store, "readonly");
-      const req = tx.objectStore(store).get(key);
-      req.onsuccess = () => resolve(req.result);
-    });
-  }),
-  clear: (store) => IDB.open().then(db => {
-    const tx = db.transaction(store, "readwrite");
-    tx.objectStore(store).clear();
-    return new Promise(resolve => tx.oncomplete = resolve);
-  }),
-  putBulk: (store, data) => IDB.open().then(db => {
-    const tx = db.transaction(store, "readwrite");
-    const st = tx.objectStore(store);
-    data.forEach(item => st.put(item));
-    return new Promise(resolve => tx.oncomplete = resolve);
-  })
-};
-
-/* --- CORE SYNCHRONIZATION --- */
-
-window.addEventListener('load', async () => {
-  updateSyncStatus();
-  refreshHistoryUI(); // Load dari DB Lokal
-  refreshOtsUI();     // Load dari DB Lokal
-  
-  if(navigator.onLine) {
-    await fullSync();
-  }
-});
-
-window.addEventListener('online', async () => {
-  showToast("🔗 Online. Sinkronisasi...");
-  await fullSync();
-});
-
-// Full Sync: Upload dulu -> Baru Download (Mencegah overwrite status Used)
-async function fullSync() {
-  await syncUp();   // 1. Kirim data offline kita ke server
-  await syncDown(); // 2. Ambil data terbaru dari server
-}
-
-async function syncUp() {
-  const queue = await IDB.getAll(storeQueue);
-  if (queue.length === 0) return;
-
-  document.getElementById("syncStatus").innerText = "⬆ Uploading...";
-
-  // Pisahkan data queue berdasarkan tipe
-  const payload = {
-    scans: queue.filter(q => q.type === 'scan').map(q => q.data),
-    history: queue.filter(q => q.type === 'history').map(q => q.data),
-    ots: queue.filter(q => q.type === 'ots').map(q => q.data)
-  };
-
-  try {
-    const res = await fetch(`${SHEET_API}?action=sync_up`, {
-      method: "POST", 
-      body: JSON.stringify(payload)
-    });
-    const json = await res.json();
-
-    if (json.status === "success") {
-      await IDB.clear(storeQueue); // Bersihkan antrian
-      showToast("✅ Data Offline Terkirim!");
-      updateSyncStatus();
-    }
-  } catch (e) {
-    console.log("Sync Up Failed:", e);
-  }
-}
-
-async function syncDown() {
-  try {
-    document.getElementById("syncStatus").innerText = "⬇ Downloading DB...";
-    const res = await fetch(`${SHEET_API}?action=sync_down`);
-    const json = await res.json();
-
-    if (json.status === "success") {
-      // 1. Simpan Tiket
-      await IDB.clear(storeTickets);
-      await IDB.putBulk(storeTickets, json.tickets);
-      
-      // 2. Simpan User (Panitia) untuk Login Offline
-      if(json.users && json.users.length > 0){
-        await IDB.clear(storeUsers);
-        await IDB.putBulk(storeUsers, json.users);
-        console.log("User DB Updated: " + json.users.length);
-      }
-      
-      localStorage.setItem("lastSync", new Date().toLocaleTimeString());
-      updateSyncStatus();
-    }
-  } catch (e) {
-    console.log("Sync Down Failed:", e);
-  }
-}
-
-function updateSyncStatus() {
-  IDB.getAll(storeQueue).then(q => {
-    const el = document.getElementById("syncStatus") || createStatusEl();
-    if (q.length > 0) {
-      el.innerText = `⚠️ ${q.length} Pending`;
-      el.style.color = "#f39c12";
-      el.style.borderColor = "#f39c12";
-    } else {
-      el.innerText = `✅ Sync (${localStorage.getItem("lastSync")||"-"})`;
-      el.style.color = "#27ae60";
-      el.style.borderColor = "#27ae60";
-    }
-  });
-}
-
-function createStatusEl() {
-  const el = document.createElement("div");
-  el.id = "syncStatus";
-  el.style.cssText = "position:fixed; bottom:10px; right:10px; background:rgba(0,0,0,0.8); padding:6px 12px; border-radius:20px; font-size:12px; border:1px solid #444; z-index:9999;";
-  document.body.appendChild(el);
-  return el;
-}
-
-/* --- VALIDASI (UPDATE LOKAL DULU) --- */
-async function validateCode(code) {
-  document.getElementById('procCamera').style.display = 'block';
-  
-  try {
-    // 1. Cek DB Lokal
-    const ticket = await IDB.get(storeTickets, code);
-    
-    document.getElementById('procCamera').style.display = 'none';
-
-    if (!ticket) {
-      playSound('invalid');
-      showResultModal('error', '❌ Tidak Ditemukan', 'Kode tiket tidak ada di database HP.');
-      return;
-    }
-
-    // 2. Cek Status
-    if (ticket.s === 1) {
-      playSound('used');
-      showResultModal('warning', '⚠️ Sudah Terpakai', `Nama: ${ticket.n}\nJenis: ${ticket.j}\nOrder: ${ticket.o}`);
-    } else {
-      // 3. VALID! -> Update DB Lokal LANGSUNG
-      ticket.s = 1; 
-      await IDB.put(storeTickets, ticket); // SAVE: Status Used PERMANEN di HP
-
-      // 4. Siapkan Data Log
-      const logData = {
-        ts: formatWIB(new Date()),
-        c: ticket.c,
-        n: ticket.n,
-        j: ticket.j,
-        q: ticket.q,
-        o: ticket.o,
-        st: "Berhasil"
+      const IDB = {
+          open: () => new Promise((resolve, reject) => {
+              const req = indexedDB.open(dbName, 4);
+              req.onupgradeneeded = (e) => {
+                  const db = e.target.result;
+                  const create = (name, key, auto) => {
+                      if (!db.objectStoreNames.contains(name)) db.createObjectStore(name, {
+                          keyPath: key,
+                          autoIncrement: auto
+                      });
+                  };
+                  create(storeTickets, "c", false);
+                  create(storeQueue, "type_id", false);
+                  create(storeUsers, "u", false);
+                  create(storeHistory, "id", true); // ID auto increment untuk history lokal
+                  create(storeOts, "id", true);
+              };
+              req.onsuccess = () => resolve(req.result);
+              req.onerror = () => reject(req.error);
+          }),
+          put: (st, val) => IDB.open().then(db => {
+              const tx = db.transaction(st, "readwrite");
+              tx.objectStore(st).put(val);
+              return new Promise(r => tx.oncomplete = r);
+          }),
+          getAll: (st) => IDB.open().then(db => {
+              return new Promise(r => {
+                  const tx = db.transaction(st, "readonly");
+                  r(tx.objectStore(st).getAll());
+              });
+          }),
+          get: (st, key) => IDB.open().then(db => {
+              return new Promise(r => {
+                  const tx = db.transaction(st, "readonly");
+                  const req = tx.objectStore(st).get(key);
+                  req.onsuccess = () => r(req.result);
+              });
+          }),
+          clear: (st) => IDB.open().then(db => {
+              const tx = db.transaction(st, "readwrite");
+              tx.objectStore(st).clear();
+              return new Promise(r => tx.oncomplete = r);
+          }),
+          putBulk: (st, data) => IDB.open().then(db => {
+              const tx = db.transaction(st, "readwrite");
+              const s = tx.objectStore(st);
+              data.forEach(i => s.put(i));
+              return new Promise(r => tx.oncomplete = r);
+          })
       };
 
-      // 5. Simpan ke History Lokal
-      await IDB.put(storeHistory, logData);
-      refreshHistoryUI();
+      // 3. System Startup
+      window.addEventListener('load', async () => {
+          updateSyncStatus();
+          refreshHistoryUI();
+          refreshOtsUI();
 
-      // 6. Masukkan ke Antrian Sync (Queue)
-      // Gunakan key unik agar tidak duplikat di queue
-      await IDB.put(storeQueue, { type_id: "scan_"+code, type: "scan", data: { c: code } });
-      await IDB.put(storeQueue, { type_id: "hist_"+code+"_"+Date.now(), type: "history", data: logData });
-      
-      playSound('valid');
-      showResultModal('success', '✅ Check-in Berhasil', `Nama: ${ticket.n}\nJenis: ${ticket.j}`);
-      updateSyncStatus();
+          if (navigator.onLine) await fullSync();
 
-      // 7. Coba Sync Background
-      if(navigator.onLine) syncUp();
-    }
-  } catch (err) {
-    alert("Error: " + err);
-  }
-}
+          // Fitur Multi-User: Sync otomatis tiap 30 detik untuk ambil data panitia lain
+          setInterval(() => {
+              if (navigator.onLine) fullSync();
+          }, 30000);
+      });
 
-/* --- UI HELPERS (History & OTS Offline) --- */
-function refreshHistoryUI() {
-  const body = document.getElementById('historyBody');
-  if (!body) return;
-  
-  IDB.getAll(storeHistory).then(records => {
-    if (records.length === 0) {
-      body.innerHTML = `<tr><td colspan="7">Belum ada scan (Offline Mode).</td></tr>`;
-      return;
-    }
-    // Sort descending (terbaru diatas)
-    records.reverse(); 
-    body.innerHTML = records.map(r => `
-      <tr>
-        <td>${r.ts}</td>
-        <td>${escapeHtml(r.n)}</td>
-        <td>${escapeHtml(r.q)}</td>
-        <td>${escapeHtml(r.j)}</td>
-        <td class="status-success">${r.st}</td>
-        <td>${r.c}</td>
-        <td>${r.o}</td>
-      </tr>
-    `).join('');
-  });
-}
+      window.addEventListener('online', async () => {
+          showToast("🔗 Online Kembali. Sinkronisasi...");
+          await fullSync();
+      });
 
-function refreshOtsUI() {
-  const body = document.getElementById('otsBody');
-  if (!body) return;
-  
-  IDB.getAll(storeOts).then(records => {
-    if (records.length === 0) {
-      body.innerHTML = `<tr><td colspan="7">Belum ada data OTS.</td></tr>`;
-      return;
-    }
-    records.reverse();
-    body.innerHTML = records.map(r => `
-      <tr>
-        <td>${r.ts}</td>
-        <td>${escapeHtml(r.n)}</td>
-        <td>${escapeHtml(r.q)}</td>
-        <td>${escapeHtml(r.j)}</td>
-        <td>${escapeHtml(r.o)}</td>
-        <td>${escapeHtml(r.st)}</td>
-        <td>-</td>
-      </tr>
-    `).join('');
-  });
-}
+      // 4. Logika Sinkronisasi (Jantung Aplikasi)
+      async function fullSync() {
+          await syncUp(); // Upload data kita dulu
+          await syncDown(); // Baru download data orang lain (biar status terupdate)
+      }
 
-// Fungsi Tambah OTS (Simulasi jika ada form input OTS)
-// Anda bisa panggil ini dari form input OTS Anda
-async function addOtsOffline(nama, jumlah, jenis) {
-  const data = {
-    ts: formatWIB(new Date()),
-    n: nama, q: jumlah, j: jenis, o: "OTS-"+Date.now(), st: "Lunas"
-  };
-  
-  await IDB.put(storeOts, data); // Simpan Lokal
-  await IDB.put(storeQueue, { type_id: "ots_"+Date.now(), type: "ots", data: data }); // Queue
-  
-  refreshOtsUI();
-  updateSyncStatus();
-  if(navigator.onLine) syncUp();
-}
+      async function syncUp() {
+          const queue = await IDB.getAll(storeQueue);
+          if (queue.length === 0) return;
 
-/* --- STANDARD FUNCTIONS (Scanner, Modal, Sounds) --- */
-// (Bagian ini sama seperti file sebelumnya, pastikan fungsi showPage, scanner, dll ada)
+          const el = document.getElementById("syncStatus");
+          if (el) el.innerText = "⬆ Uploading...";
 
-let qrScanner = null;
-const sndValid = document.getElementById('sndValid');
-const sndUsed = document.getElementById('sndUsed');
-const sndInvalid = document.getElementById('sndInvalid');
+          // Pisahkan data untuk efisiensi payload
+          const payload = {
+              scans: queue.filter(q => q.type === 'scan').map(q => q.data), // Hanya yg valid untuk update master
+              history: queue.filter(q => q.type === 'history').map(q => q.data), // Semua log
+              ots: queue.filter(q => q.type === 'ots').map(q => q.data)
+          };
 
-function showPage(page){
-  document.getElementById('scanner').style.display = page==='scanner' ? 'block' : 'none';
-  document.getElementById('history').style.display = page==='history' ? 'block' : 'none';
-  document.getElementById('ots').style.display = page==='ots' ? 'block' : 'none';
-  document.getElementById('tabScanner').classList.toggle('active', page==='scanner');
-  document.getElementById('tabHistory').classList.toggle('active', page==='history');
-  document.getElementById('tabOts').classList.toggle('active', page==='ots');
-  
-  if(page==='history') refreshHistoryUI();
-  if(page==='ots') refreshOtsUI();
-}
-window.showPage = showPage;
+          try {
+              const res = await fetch(`${SHEET_API}?action=sync_up`, {
+                  method: "POST",
+                  body: JSON.stringify(payload)
+              });
+              const json = await res.json();
+              if (json.status === "success") {
+                  await IDB.clear(storeQueue); // Kosongkan antrian jika sukses
+                  showToast("✅ Data Terkirim ke Server!");
+                  updateSyncStatus();
+              }
+          } catch (e) {
+              console.log("Skip SyncUp (Offline)");
+          }
+      }
 
-/* Modes & Scanner Implementation */
-function enterCameraMode(){
-  document.getElementById('modeSelection').style.display = 'none';
-  document.getElementById('cameraArea').style.display = 'block';
-  startScanner();
-}
-function enterManualMode(){
-  document.getElementById('modeSelection').style.display = 'none';
-  document.getElementById('manualArea').style.display = 'block';
-  setTimeout(()=>document.getElementById('manualInput').focus(),100);
-}
-function backToMode(){
-  stopScanner();
-  document.getElementById('modeSelection').style.display = 'flex';
-  document.getElementById('cameraArea').style.display = 'none';
-  document.getElementById('manualArea').style.display = 'none';
-  document.getElementById('manualInput').value = '';
-}
-async function startScanner(){
-  const reader = document.getElementById('reader');
-  document.getElementById('procCamera').style.display = 'none';
-  qrScanner = new Html5Qrcode("reader");
-  try {
-    await qrScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: {width:260,height:260} }, qrMessage => {
-      stopScanner();
-      validateCode(qrMessage);
-    });
-  } catch (err) { alert('Kamera Error: ' + err); backToMode(); }
-}
-function stopScanner(){ if(qrScanner){ qrScanner.stop().then(()=>qrScanner.clear()).catch(()=>{}); qrScanner = null; } }
-function submitManual(){ const c=document.getElementById('manualInput').value.trim(); if(c) validateCode(c); }
+      async function syncDown() {
+          try {
+              const el = document.getElementById("syncStatus");
+              if (el) el.innerText = "⬇ Syncing...";
 
-/* Modal */
-function showResultModal(type,title,msg){
-  const m = document.getElementById('resultModal');
-  document.getElementById('modalTitle').innerText = title;
-  document.getElementById('modalMessage').innerText = msg;
-  document.getElementById('modalSub').innerText = formatWIB(new Date());
-  
-  const card = document.getElementById('modalCard');
-  const icon = document.getElementById('modalIcon');
-  
-  if(type==='success'){ icon.innerText='✅'; card.style.border='2px solid #27ae60'; }
-  else if(type==='warning'){ icon.innerText='⚠️'; card.style.border='2px solid #f39c12'; }
-  else { icon.innerText='❌'; card.style.border='2px solid #e74c3c'; }
-  m.classList.add('show');
-}
-function closeModal(){ document.getElementById('resultModal').classList.remove('show'); backToMode(); }
-function playSound(t){ try{ if(t==='valid')sndValid.play(); else if(t==='used')sndUsed.play(); else sndInvalid.play(); }catch(e){} }
-function formatWIB(d){ return new Date(d).toLocaleString('id-ID', {timeZone:"Asia/Jakarta", hour:'2-digit', minute:'2-digit', day:'numeric', month:'short'}) + " WIB"; }
-function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-async function logout(){ localStorage.removeItem("panitiaLogin"); window.location.href="login.html"; }
+              const res = await fetch(`${SHEET_API}?action=sync_down`);
+              const json = await res.json();
 
-// Keyboard listeners
-document.addEventListener('keydown', (e)=>{
-  if(e.key==='Enter' && document.getElementById('manualArea').style.display!=='none') submitManual();
-  if(e.key==='Escape' && document.getElementById('resultModal').classList.contains('show')) closeModal();
-});
-</script>
+              if (json.status === "success") {
+                  // Timpa DB Tiket dengan yang baru dari server (termasuk scan dari panitia lain)
+                  if (json.tickets.length > 0) {
+                      await IDB.clear(storeTickets);
+                      await IDB.putBulk(storeTickets, json.tickets);
+                  }
+                  // Update User Login
+                  if (json.users.length > 0) {
+                      await IDB.clear(storeUsers);
+                      await IDB.putBulk(storeUsers, json.users);
+                  }
+
+                  localStorage.setItem("lastSync", new Date().toLocaleTimeString());
+                  updateSyncStatus();
+              }
+          } catch (e) {
+              console.log("Skip SyncDown (Offline)");
+          }
+      }
+
+      // 5. Validasi Tiket (Otak Scanner)
+      async function validateCode(code) {
+          // UI
+          document.getElementById('manualInput').blur();
+          document.getElementById('procCamera').style.display = 'block';
+
+          try {
+              // A. Cari di DB Lokal
+              const ticket = await IDB.get(storeTickets, code);
+              document.getElementById('procCamera').style.display = 'none';
+
+              const ts = formatWIB(new Date());
+              let logStatus = "";
+
+              // B. Logika Keputusan
+
+              // KASUS 1: Tiket Tidak Ditemukan
+              if (!ticket) {
+                  playSound('invalid');
+                  showResultModal('error', '❌ Tidak Dikenal', `Kode: ${code}\nTiket tidak ada di database.`);
+                  logStatus = "Invalid/Tidak Dikenal";
+
+                  // Catat ke History (tapi tidak update master)
+                  await addToQueue("history", {
+                      ts,
+                      c: code,
+                      n: "-",
+                      j: "-",
+                      q: "-",
+                      o: "-",
+                      st: logStatus
+                  });
+                  return;
+              }
+
+              // KASUS 2: Tiket Sudah Dipakai (s=1)
+              if (ticket.s === 1) {
+                  playSound('used');
+                  showResultModal('warning', '⚠️ Sudah Terpakai', `Nama: ${ticket.n}\nJenis: ${ticket.j}\nStatus: Used/Approved`);
+                  logStatus = "Gagal - Sudah Terpakai";
+
+                  // Catat ke History
+                  await addToQueue("history", {
+                      ts,
+                      c: ticket.c,
+                      n: ticket.n,
+                      j: ticket.j,
+                      q: ticket.q,
+                      o: ticket.o,
+                      st: logStatus
+                  });
+                  return;
+              }
+
+              // KASUS 3: Tiket Valid (Baru)
+              playSound('valid');
+              showResultModal('success', '✅ Check-in Berhasil', `Nama: ${ticket.n}\nJenis: ${ticket.j}\nJumlah: ${ticket.q}`);
+              logStatus = "Berhasil";
+
+              // 1. Update DB Lokal (Langsung kunci agar tidak bisa discan ulang di HP ini)
+              ticket.s = 1;
+              await IDB.put(storeTickets, ticket);
+
+              // 2. Masukkan Antrian 'scan' (Untuk update Master di Server)
+              await addToQueue("scan", {
+                  c: ticket.c
+              });
+
+              // 3. Masukkan Antrian 'history' (Untuk Log Laporan Lengkap)
+              await addToQueue("history", {
+                  ts,
+                  c: ticket.c,
+                  n: ticket.n,
+                  j: ticket.j,
+                  q: ticket.q,
+                  o: ticket.o,
+                  st: logStatus
+              });
+
+              // 4. Trigger Sync Background
+              if (navigator.onLine) syncUp();
+
+          } catch (err) {
+              alert("Error DB: " + err);
+          }
+      }
+
+      // Helper: Masukkan ke Queue & Refresh UI
+      async function addToQueue(type, data) {
+          const id = type + "_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4);
+          await IDB.put(storeQueue, {
+              type_id: id,
+              type: type,
+              data: data
+          });
+          updateSyncStatus();
+          refreshHistoryUI(); // Update tabel histori realtime
+      }
+
+      // 6. UI Renderers
+      function refreshHistoryUI() {
+          const body = document.getElementById('historyBody');
+          // Ambil history dari Queue (yang belum upload) + History tersimpan (opsional, disini kita load queue saja untuk sesi ini)
+          IDB.getAll(storeQueue).then(q => {
+              const logs = q.filter(x => x.type === 'history').map(x => x.data);
+              if (logs.length === 0) {
+                  body.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#888">Belum ada scan baru di sesi ini.</td></tr>`;
+                  return;
+              }
+
+              logs.reverse(); // Terbaru diatas
+              body.innerHTML = logs.map(r => {
+                  let cls = "st-warn";
+                  if (r.st.includes("Berhasil")) cls = "st-success";
+                  if (r.st.includes("Invalid")) cls = "st-danger";
+                  return `<tr>
+      <td>${r.ts.split(' ')[1] || r.ts}</td>
+      <td>${escapeHtml(r.n)}</td>
+      <td>${r.q}</td>
+      <td>${r.j}</td>
+      <td class="${cls}">${r.st}</td>
+      <td><small>${r.c}</small></td>
+    </tr>`;
+              }).join('');
+          });
+      }
+
+      function refreshOtsUI() {
+          const body = document.getElementById('otsBody');
+          IDB.getAll(storeOts).then(recs => {
+              if (recs.length === 0) {
+                  body.innerHTML = `<tr><td colspan="5">Belum ada data OTS offline.</td></tr>`;
+                  return;
+              }
+              recs.reverse();
+              body.innerHTML = recs.map(r => `<tr><td>${r.ts}</td><td>${r.n}</td><td>${r.q}</td><td>${r.j}</td><td>${r.st}</td></tr>`).join('');
+          });
+      }
+
+      function updateSyncStatus() {
+          IDB.getAll(storeQueue).then(q => {
+              let el = document.getElementById("syncStatus");
+              if (!el) {
+                  el = document.createElement("div");
+                  el.id = "syncStatus";
+                  el.style.cssText = "position:fixed; bottom:10px; right:10px; background:rgba(0,0,0,0.85); padding:8px 16px; border-radius:30px; font-size:13px; border:1px solid #444; z-index:9999; backdrop-filter:blur(5px); box-shadow: 0 4px 15px rgba(0,0,0,0.5);";
+                  document.body.appendChild(el);
+              }
+
+              const count = q.length;
+              const last = localStorage.getItem("lastSync") || "-";
+
+              if (count > 0) {
+                  el.innerHTML = `⚠️ <b>${count}</b> Pending Upload`;
+                  el.style.color = "#f1c40f";
+                  el.style.borderColor = "#f1c40f";
+              } else {
+                  el.innerHTML = `✅ Sync OK <small style="opacity:0.7">(${last})</small>`;
+                  el.style.color = "#2ecc71";
+                  el.style.borderColor = "#2ecc71";
+              }
+          });
+      }
+
+      /* ===============================================================
+          FUNGSI STANDAR (SCANNER, MODAL, DLL) - SAMA SEPERTI SEBELUMNYA
+          =============================================================== */
+      let qrScanner = null;
+      const sndValid = document.getElementById('sndValid');
+      const sndUsed = document.getElementById('sndUsed');
+      const sndInvalid = document.getElementById('sndInvalid');
+
+      function showPage(page) {
+          ['scanner', 'history', 'ots'].forEach(p => {
+              document.getElementById(p).style.display = (p === page) ? 'block' : 'none';
+              const btn = document.getElementById('tab' + p.charAt(0).toUpperCase() + p.slice(1));
+              if (btn)(p === page) ? btn.classList.add('active') : btn.classList.remove('active');
+          });
+          if (page === 'history') refreshHistoryUI();
+          if (page === 'ots') refreshOtsUI();
+      }
+      window.showPage = showPage;
+
+      function enterCameraMode() {
+          document.getElementById('modeSelection').style.display = 'none';
+          document.getElementById('cameraArea').style.display = 'block';
+          startScanner();
+      }
+
+      function enterManualMode() {
+          document.getElementById('modeSelection').style.display = 'none';
+          document.getElementById('manualArea').style.display = 'block';
+          setTimeout(() => document.getElementById('manualInput').focus(), 100);
+      }
+
+      function backToMode() {
+          stopScanner();
+          document.getElementById('modeSelection').style.display = 'flex';
+          document.getElementById('cameraArea').style.display = 'none';
+          document.getElementById('manualArea').style.display = 'none';
+          document.getElementById('manualInput').value = '';
+      }
+
+      async function startScanner() {
+          const reader = document.getElementById('reader');
+          document.getElementById('procCamera').style.display = 'none';
+          qrScanner = new Html5Qrcode("reader");
+          try {
+              await qrScanner.start({
+                  facingMode: "environment"
+              }, {
+                  fps: 10,
+                  qrbox: {
+                      width: 260,
+                      height: 260
+                  }
+              }, qrMessage => {
+                  stopScanner();
+                  validateCode(qrMessage);
+              });
+          } catch (err) {
+              alert('Kamera Error: ' + err);
+              backToMode();
+          }
+      }
+
+      function stopScanner() {
+          if (qrScanner) {
+              qrScanner.stop().then(() => qrScanner.clear()).catch(() => {});
+              qrScanner = null;
+          }
+      }
+
+      function submitManual() {
+          const c = document.getElementById('manualInput').value.trim();
+          if (c) validateCode(c);
+      }
+
+      function showResultModal(type, title, msg) {
+          const m = document.getElementById('resultModal');
+          const card = document.getElementById('modalCard');
+          document.getElementById('modalTitle').innerText = title;
+          document.getElementById('modalMessage').innerText = msg;
+          document.getElementById('modalSub').innerText = formatWIB(new Date());
+          document.getElementById('modalIcon').innerText = (type === 'success') ? '✅' : (type === 'warning') ? '⚠️' : '❌';
+          card.className = 'modal-card';
+          card.style.border = `2px solid ${(type==='success')?'#27ae60':(type==='warning')?'#f39c12':'#e74c3c'}`;
+          m.classList.add('show');
+      }
+
+      function closeModal() {
+          document.getElementById('resultModal').classList.remove('show');
+          backToMode();
+      }
+
+      function playSound(t) {
+          try {
+              if (t === 'valid') sndValid.play();
+              else if (t === 'used') sndUsed.play();
+              else sndInvalid.play();
+          } catch (e) {}
+      }
+
+      function showToast(msg) {
+          const t = document.createElement("div");
+          t.innerText = msg;
+          t.style.cssText = "position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 20px;border-radius:30px;z-index:9999;border:1px solid #555";
+          document.body.appendChild(t);
+          setTimeout(() => t.remove(), 3000);
+      }
+
+      function formatWIB(d) {
+          return new Date(d).toLocaleString('id-ID', {
+              timeZone: "Asia/Jakarta",
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit'
+          });
+      }
+
+      function escapeHtml(s) {
+          return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+      async function logout() {
+          localStorage.removeItem("panitiaLogin");
+          window.location.href = "login.html";
+      }
+
+      document.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && document.getElementById('manualArea').style.display !== 'none') submitManual();
+          if (e.key === 'Escape' && document.getElementById('resultModal').classList.contains('show')) closeModal();
+      });
+  </script>
 </body>
 </html>
