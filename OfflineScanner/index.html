@@ -888,7 +888,7 @@ async function validateCode(code) {
     // KASUS 1: Tidak Ditemukan
     if (!ticket) {
       playSound('invalid');
-      showResultModal('error', '❌ Tidak Dikenal', `Kode: ${code}\nTiket tidak ada di database.`);
+      showResultModal('error', '❌ Tidak Dikenal', `Kode: ${code}\nTiket tidak ditemukan.`);
       logStatus = "Invalid/Tidak Dikenal";
       await addToQueue("history", { ts, c: code, n: "-", j: "-", q: "-", o: "-", st: logStatus });
       return;
@@ -897,7 +897,10 @@ async function validateCode(code) {
     // KASUS 2: Sudah Dipakai
     if (ticket.s === 1) {
       playSound('used');
-      showResultModal('warning', '⚠️ Sudah Terpakai', `Nama: ${ticket.n}\nJenis: ${ticket.j}\nStatus: Used/Approved`);
+      // UPDATE: Menampilkan Jumlah Tiket agar panitia bisa double check
+      showResultModal('warning', '⚠️ Sudah Terpakai', 
+        `Nama: ${ticket.n}\nJenis: ${ticket.j}\nJumlah: ${ticket.q} Orang\n\nStatus: Tiket sudah discan sebelumnya`);
+      
       logStatus = "Gagal - Sudah Terpakai";
       await addToQueue("history", { ts, c: ticket.c, n: ticket.n, j: ticket.j, q: ticket.q, o: ticket.o, st: logStatus });
       return;
@@ -905,7 +908,11 @@ async function validateCode(code) {
 
     // KASUS 3: Sukses
     playSound('valid');
-    showResultModal('success', '✅ Check-in Berhasil', `Nama: ${ticket.n}\nJenis: ${ticket.j}`);
+    
+    // UPDATE: Menampilkan JUMLAH TIKET dengan separator agar jelas
+    showResultModal('success', '✅ Check-in Berhasil', 
+      `Nama: ${ticket.n}\nJenis: ${ticket.j}\n________________________\n\nJUMLAH: ${ticket.q} ORANG`);
+      
     logStatus = "Berhasil";
 
     ticket.s = 1; 
