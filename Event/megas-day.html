@@ -2,97 +2,309 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mega's Birthday Invitation</title>
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@300;500;700&display=swap" rel="stylesheet">
     <style>
-        /* --- CSS SAMA SEPERTI SEBELUMNYA --- */
-        :root { --gold: #d4af37; --dark: #1a1a1a; --cream: #f9f9f9; }
+        /* --- RESET & BASIC SETUP --- */
+        :root {
+            --gold: #c9a227;
+            --gold-light: #ffd700;
+            --cream: #f8f5ee;
+            --dark-overlay: rgba(0, 0, 0, 0.95);
+        }
+
+        * { box-sizing: border-box; }
+
         body {
-            margin: 0; padding: 0; background-color: var(--dark); color: var(--cream);
-            font-family: 'Montserrat', sans-serif; text-align: center;
-            display: flex; justify-content: center; align-items: center; min-height: 100vh;
-            background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=2070&auto=format&fit=crop');
-            background-size: cover; background-position: center;
+            margin: 0; padding: 0;
+            width: 100vw; height: 100vh;
+            overflow: hidden;
+            font-family: 'Montserrat', sans-serif;
+            color: var(--cream);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #000;
         }
-        .card {
-            background: rgba(26, 26, 26, 0.90); backdrop-filter: blur(10px);
-            border: 2px solid var(--gold); padding: 40px 20px;
-            max-width: 400px; width: 90%; border-radius: 15px;
-            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3); margin: 20px;
+
+        /* --- BACKGROUND IMAGE RESPONSIVE --- */
+        #bg-layer {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            object-fit: cover; 
+            object-position: center center;
+            z-index: -10;
+            filter: brightness(0.4) blur(1px); 
+            transform: scale(1.02);
         }
-        h1 { font-weight: 300; font-size: 0.9rem; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 5px; }
-        h2 { font-family: 'Great Vibes', cursive; font-size: 3rem; color: var(--gold); margin: 10px 0 30px 0; line-height: 1.2; }
-        .details { margin: 30px 0; border-top: 1px solid rgba(212, 175, 55, 0.5); border-bottom: 1px solid rgba(212, 175, 55, 0.5); padding: 20px 0; }
-        .date-time { font-weight: 700; font-size: 1.1rem; margin-bottom: 10px; color: var(--gold); }
-        .location { font-size: 0.9rem; line-height: 1.5; }
-        .quote { font-style: italic; font-size: 0.85rem; opacity: 0.8; margin: 20px 0; line-height: 1.6; }
-        
-        .qr-section { margin-top: 20px; padding: 15px; background: white; display: inline-block; border-radius: 10px; }
-        .qr-section img { width: 150px; height: 150px; display: block; }
-        
-        .guest-greeting { margin-top: 20px; font-size: 1rem; color: var(--gold); }
-        #guest-name { font-weight: bold; text-transform: uppercase; text-decoration: underline; }
-        
-        .footer { margin-top: 30px; font-weight: 500; letter-spacing: 1px; color: var(--gold); font-size: 0.8rem;}
+
+        /* --- OVERLAY PEMBUKA (COVER) --- */
+        #cover-screen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: var(--dark-overlay);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.8s ease-in-out;
+            text-align: center;
+        }
+
+        .cover-title {
+            font-family: 'Great Vibes', cursive;
+            font-size: 3.5rem;
+            color: var(--gold);
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        .open-btn {
+            padding: 12px 30px;
+            background: transparent;
+            border: 1px solid var(--gold);
+            color: var(--gold-light);
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 15px rgba(201, 162, 39, 0.3);
+            display: flex; align-items: center; gap: 10px;
+        }
+
+        .open-btn:active { transform: scale(0.95); background: rgba(201, 162, 39, 0.2); }
+
+        /* --- PARTICLES --- */
+        .particle-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -5; pointer-events: none;
+        }
+        .particle {
+            position: absolute; bottom: -10px;
+            background: var(--gold-light);
+            border-radius: 50%;
+            opacity: 0; animation: floatUp linear infinite;
+        }
+
+        /* --- MAIN CONTENT (Initially Hidden) --- */
+        .content {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(10, 10, 10, 0.65);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(201, 162, 39, 0.5);
+            border-radius: 20px;
+            box-shadow: 0 0 40px rgba(0,0,0,0.9);
+            padding: 2vh 20px; 
+            max-height: 98vh;
+            opacity: 0; /* Hidden initially */
+            transform: scale(0.9);
+            transition: all 1s ease;
+        }
+
+        /* Classes to trigger animations */
+        .content.show { opacity: 1; transform: scale(1); }
+
+        /* --- TYPOGRAPHY --- */
+        h1 {
+            font-size: clamp(0.7rem, 1.5vh, 1rem);
+            letter-spacing: 3px; text-transform: uppercase;
+            margin: 0 0 5px 0; color: var(--gold-light);
+            border-bottom: 1px solid var(--gold); padding-bottom: 5px;
+            line-height: 1.5;
+        }
+        .join-text { font-size: 0.7rem; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px; color: #ddd; }
+        h2 {
+            font-family: 'Great Vibes', cursive;
+            font-size: clamp(2.5rem, 5.5vh, 4rem);
+            color: var(--gold); margin: 0; line-height: 1.2;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        .guest-wrapper { margin: 1vh 0; }
+        .guest-label { font-size: 0.7rem; opacity: 0.8; display: block; margin-bottom: 2px;}
+        #guest-name {
+            font-size: clamp(0.9rem, 2vh, 1.3rem);
+            font-weight: 700; color: #fff;
+            text-transform: uppercase; letter-spacing: 1px;
+            display: block; 
+            text-shadow: 0 0 10px var(--gold);
+            background: rgba(201, 162, 39, 0.2);
+            padding: 2px 10px; border-radius: 4px;
+        }
+
+        /* DETAILS BOX */
+        .details {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px; padding: 1.5vh 10px; width: 100%;
+            margin: 1vh 0; border: 1px solid rgba(255, 215, 0, 0.1);
+        }
+        .date-time { font-size: clamp(0.8rem, 1.8vh, 1.1rem); font-weight: 700; color: var(--gold); margin-bottom: 5px; line-height: 1.4; }
+        .location { font-size: clamp(0.7rem, 1.5vh, 0.9rem); line-height: 1.4; }
+        .quote { font-size: 0.7rem; font-style: italic; opacity: 0.8; margin-bottom: 1vh; padding: 0 10px; line-height: 1.4; }
+
+        /* --- QR SECTION --- */
+        .qr-section { background: #fff; padding: 6px; border-radius: 8px; margin: 0.5vh 0; }
+        .qr-section img { width: 10vh; height: 10vh; max-width: 100px; max-height: 100px; display: block; }
+        .scan-text { color: #000; font-weight: bold; font-size: 0.55rem; margin-top: 3px; letter-spacing: 1px; text-transform: uppercase; }
+
+        .footer {
+            margin-top: 1vh; font-size: 0.7rem; letter-spacing: 2px;
+            color: var(--gold-light); opacity: 0.9; font-weight: bold;
+            padding-bottom: 15px; 
+        }
+
+        /* --- MUSIC VISUALIZER --- */
+        #visualizer {
+            position: absolute; bottom: 0; left: 0; right: 0; height: 30px;
+            display: flex; justify-content: center; align-items: flex-end;
+            gap: 3px; z-index: 1; pointer-events: none; padding-bottom: 5px; opacity: 0.6;
+        }
+        .bar { width: 5px; background: var(--gold); height: 5px; border-radius: 3px 3px 0 0; transition: height 0.1s; }
+
+        @keyframes floatUp { 0% { transform: translateY(0) scale(0.5); opacity: 0; } 50% { opacity: 0.8; } 100% { transform: translateY(-100vh) scale(1); opacity: 0; } }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); opacity: 0.8; } }
     </style>
 </head>
 <body>
 
-    <div class="card">
+    <div id="cover-screen">
+        <div class="cover-title">Mega's Birthday</div>
+        <div style="font-size: 0.8rem; letter-spacing: 2px; margin-bottom: 20px; color:white;">YOU ARE INVITED</div>
+        <button class="open-btn" onclick="openInvitation()">
+            OPEN INVITATION <span>📩</span>
+        </button>
+    </div>
+
+    <img id="bg-layer" src="https://res.cloudinary.com/dn4ugx6ar/image/upload/v1765469884/vudqobixpnpvmc3p0yhu.webp" alt="Birthday Background">
+
+    <div class="particle-container" id="particles"></div>
+
+    <audio id="bg-music" loop>
+        <source src="https://www.dimsprat.site/Event/Audio/1212.MP3" type="audio/mpeg">
+    </audio>
+
+    <div class="content" id="main-content">
         <h1>You Are Invited<br>to My Birthday Party</h1>
-        
+        <div class="join-text">Join us to celebrate</div>
         <h2>Mega's Day</h2>
 
-        <div class="guest-greeting">
-            Special Invitation for:<br>
-            <span id="guest-name">Guest</span>
+        <div class="guest-wrapper">
+            <span class="guest-label">To Special Guest:</span>
+            <span id="guest-name">Loading...</span>
         </div>
 
         <div class="details">
             <div class="date-time">
                 16 December 2025<br>
-                Tuesday, 05PM - 09PM
+                Tuesday , 05PM - 09PM
             </div>
             <div class="location">
-                at Restoran Pondok Rangi,<br>
-                West Jakarta
+                at Restoran Pondok Rangi ,<br>West Jakarta
             </div>
         </div>
 
-        <p class="quote">
-            "The years we shared while growing up are like treasures to me, I can Remember our every moment of laughter."
-        </p>
+        <div class="quote">
+            "The years we shared while growing up are like treasures to me , I can Remember our every moment of laughter ."
+        </div>
 
         <div class="qr-section">
-            <img id="qr-image" src="" alt="Loading QR...">
-            <div style="color:black; font-size:0.7rem; margin-top:5px; font-weight:bold;">SCAN TO ENTER</div>
+            <img id="qr-image" src="" alt="QR Code">
+            <div class="scan-text">Scan Entry</div>
         </div>
 
-        <div class="footer">
-            I hope to see you there!
-        </div>
+        <div class="footer">I hope to see you there !</div>
+        
+        <div id="visualizer"></div>
     </div>
 
     <script>
-        // 1. Ambil Parameter dari URL (misal: ?nama=Dimas)
+        // --- SCRIPT URL & QR ---
         const urlParams = new URLSearchParams(window.location.search);
-        let guestName = urlParams.get('nama'); // Mengambil nilai 'nama'
+        let guestName = urlParams.get('nama') || "Special Guest";
+        document.getElementById('guest-name').innerText = guestName;
+        const qrUrl = `https://quickchart.io/qr?text=${encodeURIComponent(guestName)}&size=200&margin=1&ecLevel=M&dark=000000&light=ffffff`;
+        document.getElementById('qr-image').src = qrUrl;
 
-        // 2. Jika tidak ada nama di URL, pakai default
-        if (!guestName) {
-            guestName = "Special Guest";
+        // --- SCRIPT AUDIO & VISUALIZER & OPENER ---
+        const audio = document.getElementById("bg-music");
+        const visualizer = document.getElementById('visualizer');
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        let analyser, dataArray;
+        
+        // Buat Bar Visualizer
+        for(let i=0; i<20; i++) {
+            let b = document.createElement('div');
+            b.className = 'bar';
+            visualizer.appendChild(b);
+        }
+        const bars = document.querySelectorAll('.bar');
+
+        // Fungsi Buka Undangan (Trigger Autoplay)
+        function openInvitation() {
+            // 1. Hilangkan Cover
+            const cover = document.getElementById('cover-screen');
+            cover.style.opacity = '0';
+            setTimeout(() => { cover.style.display = 'none'; }, 800);
+
+            // 2. Munculkan Konten
+            const content = document.getElementById('main-content');
+            content.classList.add('show');
+
+            // 3. Play Audio
+            if (audioContext.state === 'suspended') audioContext.resume();
+            audio.play().then(() => {
+                console.log("Audio playing");
+                startVisualizer();
+            }).catch(e => console.log("Audio play failed", e));
         }
 
-        // 3. Update Teks Nama di Undangan
-        document.getElementById('guest-name').innerText = guestName;
+        function startVisualizer() {
+            const source = audioContext.createMediaElementSource(audio);
+            analyser = audioContext.createAnalyser();
+            source.connect(analyser);
+            analyser.connect(audioContext.destination);
+            analyser.fftSize = 64;
+            dataArray = new Uint8Array(analyser.frequencyBinCount);
+            animate();
+        }
 
-        // 4. Update Gambar QR Code sesuai Nama
-        // Kita encode URI agar spasi terbaca (misal: "Dimas Pratama" jadi "Dimas%20Pratama")
-        const qrContent = encodeURIComponent(guestName);
-        const qrUrl = `https://quickchart.io/qr?text=${qrContent}&size=300&margin=1`;
-        
-        document.getElementById('qr-image').src = qrUrl;
+        function animate() {
+            requestAnimationFrame(animate);
+            if(analyser) {
+                analyser.getByteFrequencyData(dataArray);
+                bars.forEach((bar, i) => {
+                    let h = (dataArray[i] / 255) * 30; 
+                    bar.style.height = Math.max(4, h) + 'px';
+                });
+            }
+        }
+
+        // --- SCRIPT PARTICLES ---
+        const pContainer = document.getElementById('particles');
+        for(let i=0; i<30; i++) {
+            let p = document.createElement('div');
+            p.className = 'particle';
+            let size = Math.random() * 8 + 2 + 'px';
+            p.style.width = size; p.style.height = size;
+            p.style.left = Math.random() * 100 + '%';
+            p.style.animationDuration = Math.random() * 5 + 5 + 's';
+            p.style.animationDelay = Math.random() * 5 + 's';
+            pContainer.appendChild(p);
+        }
     </script>
 </body>
 </html>
