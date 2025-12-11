@@ -65,7 +65,6 @@
             animation: pulse 2s infinite;
         }
 
-        /* Dulu cover-guest-label, sekarang ganti kontennya */
         .cover-guest-label {
             font-size: 0.8rem;
             letter-spacing: 3px;
@@ -131,12 +130,12 @@
         
         /* Nama Tamu di Paling Atas Undangan */
         .guest-wrapper { 
-            margin: 0.5vh 0 1vh; /* Jarak atas/bawah */
-            order: -1; /* Pindahkan ke atas (sebelum h1) */
+            margin: 0.5vh 0 1vh;
+            order: -1; 
         }
         #guest-name {
             font-size: clamp(1rem, 2.2vh, 1.5rem);
-            font-weight: 700; color: var(--gold-light); /* Warna Emas */
+            font-weight: 700; color: var(--gold-light);
             text-transform: uppercase; letter-spacing: 1px;
             display: block; 
             text-shadow: 0 0 10px var(--gold);
@@ -237,7 +236,8 @@
     <div class="content" id="main-content">
         
         <div class="guest-wrapper">
-            <span class="guest-label">Invitation For:</span> <span id="guest-name">Loading...</span>
+            <span class="guest-label">Invitation For:</span>
+            <span id="guest-name">Loading...</span>
         </div>
 
         <h1>You Are Invited<br>to My Birthday Party</h1>
@@ -272,24 +272,29 @@
     <script>
         // === LOGIKA UTAMA ===
         
-        const urlParams = new URLSearchParams(window.location.search);
-        let guestName = urlParams.get('nama');
-        
-        if (!guestName) { guestName = "Tamu Undangan"; }
+        // 1. AMBIL NAMA TAMU DARI GOOGLE APPS SCRIPT
+        let guestName = '<?= guestName ?>'; 
+        if (!guestName || guestName === 'null') { guestName = "Tamu Undangan"; }
 
         // Update Teks di Layar
         document.getElementById('cover-guest-name').innerText = guestName;
         document.getElementById('guest-name').innerText = guestName;
 
         // Bikin QR Code (Isinya Link/Data untuk di-scan Admin)
-        const scanData = "SCAN_CHECKIN:" + encodeURIComponent(guestName);
-        const qrUrl = `https://quickchart.io/qr?text=${scanData}&size=200&margin=1&ecLevel=M&dark=000000&light=ffffff`;
-        document.getElementById('qr-image').src = qrUrl;
+        function generateQrCode(urlScript) {
+            // Data yang di-encode adalah URL Script + marker SCAN_CHECKIN
+            const scanData = urlScript + "?action=scan&content=SCAN_CHECKIN:" + encodeURIComponent(guestName);
+            const qrUrl = `https://quickchart.io/qr?text=${scanData}&size=200&margin=1&ecLevel=M&dark=000000&light=ffffff`;
+            document.getElementById('qr-image').src = qrUrl;
+        }
 
-        // --- CEK STATUS OTOMATIS (Jika pakai Apps Script) ---
+        // 2. RUN QR CODE GENERATION SETELAH DAPAT URL SCRIPT YANG BENAR
+        google.script.run.withSuccessHandler(generateQrCode).getUrl();
+
+        // --- CEK STATUS OTOMATIS (Polling ke Apps Script) ---
         function checkStatus() {
             if (guestName === "Tamu Undangan") return;
-            // Panggil fungsi server-side Google Apps Script
+            
             try {
                 google.script.run.withSuccessHandler(function(status) {
                     if (status === "HADIR") {
@@ -297,7 +302,7 @@
                     }
                 }).cekStatusTamu(guestName);
             } catch(e) {
-                // Error handling jika tidak dijalankan di environment Apps Script
+                 // Error handling jika tidak dijalankan di environment Apps Script
             }
         }
         setInterval(checkStatus, 5000);
@@ -305,8 +310,10 @@
         function showThankYouScreen() {
             const tyScreen = document.getElementById('thank-you-screen');
             if (tyScreen.style.display !== 'flex') {
+                tyScreen.style.opacity = '0';
                 tyScreen.style.display = 'flex';
                 document.getElementById('main-content').style.display = 'none';
+                setTimeout(() => { tyScreen.style.opacity = '1'; }, 50);
             }
         }
 
@@ -328,7 +335,7 @@
             document.getElementById('main-content').classList.add('show');
             
             if (audioContext.state === 'suspended') audioContext.resume();
-            audio.play().then(() => { startVisualizer(); }).catch(e => console.log("Audio play failed", e));
+            audio.play().then(() => { startVisualizer(); }).catch(e => console.log("Audio play blocked until interaction"));
         }
 
         function startVisualizer() {
