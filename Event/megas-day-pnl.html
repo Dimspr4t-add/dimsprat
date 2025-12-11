@@ -12,22 +12,18 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   
   <style>
-    /* --- CSS VARIABLES --- */
+    /* --- RED THEME VARIABLES --- */
     :root {
-      /* Colors */
-      --primary: #ff0033;         /* Red Neon */
+      --primary: #ff0033;         
       --primary-dark: #b30024;
       --text-white: #ffffff;
       --text-muted: #b0b0b0;
-      --bg-dark: #000000;
       
-      /* Glassmorphism Theme */
-      --glass-bg: rgba(20, 20, 20, 0.70); /* Sedikit lebih gelap */
+      --glass-bg: rgba(20, 20, 20, 0.70);
       --glass-border: rgba(255, 255, 255, 0.1);
       --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.7);
-      --blur-amt: 12px; /* Blur untuk kartu */
+      --blur-amt: 12px;
       
-      /* Dimensions */
       --header-h: 70px;
       --nav-h: 70px;
       --z-header: 1000;
@@ -35,7 +31,6 @@
       --z-bg: -1;
     }
     
-    /* Reset & Base Styles */
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     
     body {
@@ -43,26 +38,23 @@
       color: var(--text-white);
       margin: 0;
       padding: 0;
-      /* Padding dinamis untuk menghindari header/nav fixed */
       padding-top: calc(var(--header-h) + 25px);
       padding-bottom: calc(var(--nav-h) + 30px);
       min-height: 100vh;
       background-color: var(--bg-dark);
-      position: relative; /* Diperlukan untuk pseudo-element background */
+      position: relative;
     }
 
-    /* --- BACKGROUND BLUR IMPLEMENTATION --- */
+    /* BACKGROUND BLUR IMPLEMENTATION */
     body::before {
       content: '';
       position: fixed;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      z-index: var(--z-bg); /* Taruh di paling belakang */
+      z-index: var(--z-bg); 
       background: url('https://www.dimsprat.site/Assets/images/Background.webp') no-repeat center center;
       background-size: cover;
-      /* INI YANG DIMINTA: Blur 3px dan digelapkan */
       filter: blur(3px) brightness(0.4); 
-      /* Scale sedikit agar pinggiran blur tidak terlihat kosong */
       transform: scale(1.05); 
       pointer-events: none;
     }
@@ -91,7 +83,7 @@
     /* --- 2. CONTAINER & CARD --- */
     .container {
       padding: 0 20px;
-      max-width: 480px; /* Sedikit lebih ramping untuk HP */
+      max-width: 480px;
       margin: 0 auto;
       display: none;
       animation: fadeInUp 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
@@ -218,8 +210,8 @@
     }
     .history-item:hover { transform: translateX(5px); background: rgba(40, 40, 40, 0.8);}
     
-    .history-item.success { border-left-color: #4caf50; } /* Green */
-    .history-item.fail { border-left-color: var(--primary); } /* Red */
+    .history-item.success { border-left-color: #4caf50; }
+    .history-item.fail { border-left-color: var(--primary); }
 
     .h-info { text-align: left; }
     .h-name { font-weight: 600; font-size: 1rem; color: var(--text-white); display: block; margin-bottom: 4px;}
@@ -319,8 +311,6 @@
   </nav>
 
   <script>
-    // --- OPTIMIZED JS (ES6 Modern Syntax) ---
-
     // --- NAVIGASI ---
     function showTab(tabId) {
       const containers = document.querySelectorAll('.container');
@@ -365,10 +355,10 @@
         linkBox.value = res.link;
         
         if(res.success) { 
-            msgBox.style.color = '#4caf50'; // Success Green
+            msgBox.style.color = '#4caf50';
             namaInput.value = ''; 
         } else { 
-            msgBox.style.color = '#ff0033'; // Error Red
+            msgBox.style.color = '#ff0033';
         }
       }).tambahTamuBaru(nama);
     }
@@ -376,7 +366,7 @@
     function copyLink() {
       const copyText = document.getElementById("result-link");
       copyText.select();
-      copyText.setSelectionRange(0, 99999); // Mobile support
+      copyText.setSelectionRange(0, 99999);
       
       try {
           document.execCommand("copy");
@@ -393,7 +383,7 @@
     let html5QrcodeScanner = null;
     
     function startScanner() {
-      if(html5QrcodeScanner) return; // Prevent duplicate instance
+      if(html5QrcodeScanner) return; 
       
       html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
           fps: 10, 
@@ -413,7 +403,7 @@
     }
 
     function onScanSuccess(decodedText, decodedResult) {
-      stopScanner(); // Stop scanning immediately after success
+      stopScanner(); 
       
       const resBox = document.getElementById('scan-result');
       resBox.innerHTML = '<span style="color:var(--primary); font-weight:bold;">⏳ Verifikasi Data...</span>';
@@ -425,7 +415,6 @@
         
         resBox.innerHTML = `<span style="color:${color}; font-weight:700; font-size:1.1rem;">${icon} ${res}</span>`;
         
-        // Auto restart scanner
         setTimeout(() => { 
             startScanner(); 
             resBox.innerHTML = "Siap memindai...";
@@ -436,8 +425,6 @@
     }
     
     function onScanFailure(error) {
-        // Opsional: handle error scanning per frame (biasanya diabaikan agar tidak spam console)
-        // console.warn(`QR error = ${error}`);
     }
 
     // --- HISTORY LOGIC ---
@@ -453,12 +440,10 @@
           return;
         }
         
-        // Optimize rendering using document fragment
         const fragment = document.createDocumentFragment();
         
         data.forEach((row) => {
           const date = new Date(row[0]);
-          // Format time: HH:mm
           const timeStr = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':');
           
           const isSuccess = row[2].includes("SUKSES");
