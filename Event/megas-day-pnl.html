@@ -1,471 +1,373 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <base target="_top">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Admin Panel - Mega's Day</title>
-  
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-  
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  
-  <style>
-    /* --- RED THEME VARIABLES --- */
-    :root {
-      --primary: #ff0033;         
-      --primary-dark: #b30024;
-      --text-white: #ffffff;
-      --text-muted: #b0b0b0;
-      
-      --glass-bg: rgba(20, 20, 20, 0.70);
-      --glass-border: rgba(255, 255, 255, 0.1);
-      --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.7);
-      --blur-amt: 12px;
-      
-      --header-h: 70px;
-      --nav-h: 70px;
-      --z-header: 1000;
-      --z-nav: 1000;
-      --z-bg: -1;
-    }
-    
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    
-    body {
-      font-family: 'Poppins', sans-serif;
-      color: var(--text-white);
-      margin: 0;
-      padding: 0;
-      padding-top: calc(var(--header-h) + 25px);
-      padding-bottom: calc(var(--nav-h) + 30px);
-      min-height: 100vh;
-      background-color: var(--bg-dark);
-      position: relative;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mega's Day Invitation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- RESET & BASIC SETUP --- */
+        :root {
+            --gold: #c9a227;
+            --gold-light: #ffd700;
+            --cream: #f8f5ee;
+            --dark-overlay: rgba(0, 0, 0, 0.95);
+        }
 
-    /* BACKGROUND BLUR IMPLEMENTATION */
-    body::before {
-      content: '';
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      z-index: var(--z-bg); 
-      background: url('https://www.dimsprat.site/Assets/images/Background.webp') no-repeat center center;
-      background-size: cover;
-      filter: blur(3px) brightness(0.4); 
-      transform: scale(1.05); 
-      pointer-events: none;
-    }
+        * { box-sizing: border-box; }
 
-    /* --- 1. HEADER (Fixed Glass) --- */
-    .app-header {
-      position: fixed;
-      top: 0; left: 0; width: 100%;
-      height: var(--header-h);
-      background: rgba(0, 0, 0, 0.5);
-      backdrop-filter: blur(15px);
-      -webkit-backdrop-filter: blur(15px);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: var(--z-header);
-      border-bottom: 1px solid var(--glass-border);
-      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-    }
-    
-    .header-logo-img {
-      height: 38px; width: auto;
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
-    }
+        body {
+            margin: 0; padding: 0;
+            width: 100vw; height: 100vh;
+            overflow: hidden;
+            font-family: 'Montserrat', sans-serif;
+            color: var(--cream);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+        }
 
-    /* --- 2. CONTAINER & CARD --- */
-    .container {
-      padding: 0 20px;
-      max-width: 480px;
-      margin: 0 auto;
-      display: none;
-      animation: fadeInUp 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
-    }
-    .container.active { display: block; }
+        /* --- BACKGROUND IMAGE --- */
+        #bg-layer {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            object-fit: cover; 
+            object-position: center center;
+            z-index: -10;
+            filter: brightness(0.4) blur(1px); 
+            transform: scale(1.02);
+        }
 
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+        /* --- LAYAR PEMBUKA (COVER) --- */
+        #cover-screen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: var(--dark-overlay);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.8s ease-in-out;
+            text-align: center;
+            padding: 20px;
+        }
 
-    .card {
-      background: var(--glass-bg);
-      backdrop-filter: blur(var(--blur-amt));
-      -webkit-backdrop-filter: blur(var(--blur-amt));
-      border: 1px solid var(--glass-border);
-      border-radius: 24px;
-      padding: 30px 25px;
-      box-shadow: var(--glass-shadow);
-      text-align: center;
-    }
+        .cover-title {
+            font-family: 'Great Vibes', cursive;
+            font-size: 3.5rem;
+            color: var(--gold);
+            margin-bottom: 30px;
+            line-height: 1.2;
+            animation: pulse 2s infinite;
+        }
 
-    h2 {
-      margin: 0 0 25px 0;
-      font-size: 1.1rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      color: var(--primary);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      padding-bottom: 15px;
-    }
+        .cover-guest-label {
+            font-size: 0.8rem;
+            letter-spacing: 3px;
+            color: #ccc;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
 
-    /* --- 3. FORMS & BUTTONS --- */
-    .input-wrapper { margin-bottom: 25px; }
-    
-    input[type="text"] {
-      width: 100%;
-      padding: 16px 20px;
-      background: rgba(0, 0, 0, 0.5);
-      border: 1px solid var(--glass-border);
-      border-radius: 12px;
-      color: var(--text-white);
-      font-family: 'Poppins', sans-serif;
-      font-size: 1rem;
-      outline: none;
-      transition: all 0.3s ease;
-    }
-    
-    input[type="text"]:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 15px rgba(255, 0, 51, 0.3);
-      background: rgba(0, 0, 0, 0.7);
-    }
+        #cover-guest-name {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 40px;
+            text-shadow: 0 0 15px var(--gold);
+            border-bottom: 1px solid var(--gold);
+            padding-bottom: 5px;
+        }
 
-    button {
-      width: 100%;
-      padding: 16px;
-      border-radius: 50px;
-      border: none;
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-      color: var(--text-white);
-      font-weight: 700;
-      font-size: 0.95rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      cursor: pointer;
-      box-shadow: 0 8px 20px rgba(255, 0, 51, 0.25);
-      font-family: 'Poppins', sans-serif;
-      transition: transform 0.2s, box-shadow 0.3s;
-    }
-    button:active { transform: scale(0.97); }
-    button:hover { box-shadow: 0 10px 25px rgba(255, 0, 51, 0.4); }
+        .open-btn {
+            padding: 12px 35px;
+            background: transparent;
+            border: 1px solid var(--gold);
+            color: var(--gold-light);
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 20px rgba(201, 162, 39, 0.2);
+            display: flex; align-items: center; gap: 10px;
+        }
 
-    /* Result Area */
-    #result-area {
-      margin-top: 25px;
-      background: rgba(0,0,0,0.4);
-      padding: 20px;
-      border-radius: 12px;
-      border: 1px dashed rgba(255, 0, 51, 0.3);
-      display: none;
-    }
-    
-    .link-display {
-      width: 100%; background: transparent; border: none;
-      color: var(--primary); font-size: 0.85rem; text-align: center;
-      margin: 10px 0; font-family: monospace; font-weight: bold;
-    }
+        .open-btn:active { transform: scale(0.95); background: rgba(201, 162, 39, 0.2); }
 
-    .btn-secondary {
-      background: rgba(255,255,255,0.08) !important;
-      border: 1px solid rgba(255,255,255,0.1) !important;
-      box-shadow: none !important;
-      margin-top: 10px; font-size: 0.85rem !important; padding: 12px !important;
-      color: var(--text-muted) !important;
-    }
-    .btn-secondary:hover { color: var(--text-white) !important; border-color: var(--text-white) !important;}
+        /* --- KARTU UNDANGAN UTAMA --- */
+        .content {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(10, 10, 10, 0.65);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(201, 162, 39, 0.5);
+            border-radius: 20px;
+            box-shadow: 0 0 40px rgba(0,0,0,0.9);
+            padding: 2vh 20px; 
+            max-height: 98vh;
+            opacity: 0;
+            transform: scale(0.9);
+            transition: all 1s ease;
+        }
 
-    /* --- 4. SCANNER UI --- */
-    #reader {
-      width: 100%; border-radius: 16px; overflow: hidden;
-      border: 2px solid #333; background: #000;
-      box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
-    }
-    #scan-result {
-      margin-top: 20px; padding: 15px; border-radius: 10px;
-      background: rgba(255,255,255,0.05); font-size: 0.9rem; color: var(--text-muted);
-      border: 1px solid var(--glass-border);
-    }
+        .content.show { opacity: 1; transform: scale(1); }
+        
+        /* Nama Tamu di Paling Atas Undangan */
+        .guest-wrapper { 
+            margin: 0.5vh 0 1vh;
+            order: -1; 
+        }
+        #guest-name {
+            font-size: clamp(1rem, 2.2vh, 1.5rem);
+            font-weight: 700; color: var(--gold-light);
+            text-transform: uppercase; letter-spacing: 1px;
+            display: block; 
+            text-shadow: 0 0 10px var(--gold);
+            background: rgba(201, 162, 39, 0.2);
+            padding: 4px 15px; 
+            border-radius: 4px;
+        }
+        
+        /* Hapus label yang tidak perlu */
+        .guest-label { display: none; } 
 
-    /* --- 5. HISTORY LIST --- */
-    .history-header {
-      display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
-    }
+        h1 {
+            font-size: clamp(0.7rem, 1.5vh, 1rem);
+            letter-spacing: 3px; text-transform: uppercase;
+            margin: 0 0 5px 0; color: var(--gold-light);
+            border-bottom: 1px solid var(--gold); padding-bottom: 5px;
+            line-height: 1.5;
+        }
+        .join-text { font-size: 0.7rem; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px; color: #ddd; }
+        h2 {
+            font-family: 'Great Vibes', cursive;
+            font-size: clamp(2.5rem, 5.5vh, 4rem);
+            color: var(--gold); margin: 0; line-height: 1.2;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        
+        .details {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px; padding: 1.5vh 10px; width: 100%;
+            margin: 1vh 0; border: 1px solid rgba(255, 215, 0, 0.1);
+        }
+        .date-time { font-size: clamp(0.8rem, 1.8vh, 1.1rem); font-weight: 700; color: var(--gold); margin-bottom: 5px; line-height: 1.4; }
+        .location { font-size: clamp(0.7rem, 1.5vh, 0.9rem); line-height: 1.4; }
+        .quote { font-size: 0.7rem; font-style: italic; opacity: 0.8; margin-bottom: 1vh; padding: 0 10px; line-height: 1.4; }
 
-    .history-item {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 15px 20px; margin-bottom: 12px;
-      background: rgba(30, 30, 30, 0.6);
-      border-radius: 12px;
-      border-left: 4px solid #444;
-      transition: transform 0.2s, background 0.2s;
-    }
-    .history-item:hover { transform: translateX(5px); background: rgba(40, 40, 40, 0.8);}
-    
-    .history-item.success { border-left-color: #4caf50; }
-    .history-item.fail { border-left-color: var(--primary); }
+        .qr-section { background: #fff; padding: 6px; border-radius: 8px; margin: 0.5vh 0; }
+        .qr-section img { width: 10vh; height: 10vh; max-width: 100px; max-height: 100px; display: block; }
+        .scan-text { color: #000; font-weight: bold; font-size: 0.55rem; margin-top: 3px; letter-spacing: 1px; text-transform: uppercase; }
 
-    .h-info { text-align: left; }
-    .h-name { font-weight: 600; font-size: 1rem; color: var(--text-white); display: block; margin-bottom: 4px;}
-    .h-time { font-size: 0.75rem; color: var(--text-muted); }
-    .h-badge { font-size: 0.7rem; font-weight: 700; padding: 5px 10px; border-radius: 20px; background: rgba(255,255,255,0.08); color: var(--text-muted); letter-spacing: 0.5px; }
+        .footer {
+            margin-top: 1vh; font-size: 0.7rem; letter-spacing: 2px;
+            color: var(--gold-light); opacity: 0.9; font-weight: bold;
+            padding-bottom: 15px; 
+        }
 
-    /* --- 6. FLOATING NAVIGATION --- */
-    .nav {
-      position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
-      width: 90%; max-width: 360px; height: var(--nav-h);
-      background: rgba(15, 15, 15, 0.85);
-      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-      border-radius: 35px;
-      display: flex; justify-content: space-evenly; align-items: center;
-      border: 1px solid rgba(255, 0, 51, 0.1);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-      z-index: var(--z-nav);
-    }
+        #visualizer {
+            position: absolute; bottom: 0; left: 0; right: 0; height: 30px;
+            display: flex; justify-content: center; align-items: flex-end;
+            gap: 3px; z-index: 1; pointer-events: none; padding-bottom: 5px; opacity: 0.6;
+        }
+        .bar { width: 5px; background: var(--gold); height: 5px; border-radius: 3px 3px 0 0; transition: height 0.1s; }
 
-    .nav-item {
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      color: #666; cursor: pointer; width: 70px; height: 100%;
-      transition: all 0.3s ease; position: relative;
-    }
+        .particle-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -5; pointer-events: none; }
+        .particle { position: absolute; bottom: -10px; background: var(--gold-light); border-radius: 50%; opacity: 0; animation: floatUp linear infinite; }
+        @keyframes floatUp { 0% { transform: translateY(0) scale(0.5); opacity: 0; } 50% { opacity: 0.8; } 100% { transform: translateY(-100vh) scale(1); opacity: 0; } }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); opacity: 0.8; } }
 
-    .nav-icon { font-size: 1.5rem; margin-bottom: 2px; transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
-    .nav-text { font-size: 0.65rem; font-weight: 600; opacity: 0; transform: translateY(10px); transition: all 0.3s; position: absolute; bottom: 12px; color: var(--primary); letter-spacing: 1px;}
-
-    /* Active State */
-    .nav-item.active { color: var(--primary); }
-    .nav-item.active .nav-icon { transform: translateY(-10px) scale(1.1); filter: drop-shadow(0 0 8px var(--primary)); }
-    .nav-item.active .nav-text { opacity: 1; transform: translateY(0); }
-    
-    /* Red Dot Indicator */
-    .nav-item.active::after {
-      content: ''; position: absolute; top: 15px;
-      width: 6px; height: 6px; background: var(--primary);
-      border-radius: 50%; box-shadow: 0 0 8px var(--primary);
-    }
-
-  </style>
+        /* THANK YOU SCREEN */
+        #thank-you-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 2000;
+            display: none; 
+            flex-direction: column; justify-content: center; align-items: center;
+            text-align: center; color: var(--gold);
+        }
+        .ty-title { font-family: 'Great Vibes'; font-size: 4rem; margin-bottom: 20px; animation: pulse 2s infinite; }
+        .ty-msg { font-family: 'Montserrat'; font-size: 1rem; color: #fff; letter-spacing: 2px; max-width: 80%; line-height: 1.6; }
+    </style>
 </head>
 <body>
 
-  <header class="app-header">
-    <img src="https://www.dimsprat.site/Assets/images/logo.png" alt="Dimsprat" class="header-logo-img">
-  </header>
+    <div id="thank-you-screen">
+        <div class="ty-title">Thank You</div>
+        <div class="ty-msg">
+            Your attendance has been verified.<br>
+            Please enjoy the party!
+        </div>
+        <div style="font-size:3rem; margin-top:20px;">✨</div>
+    </div>
 
-  <div id="add-guest" class="container active">
-    <div class="card">
-      <h2>Buat Undangan Baru</h2>
-      <div class="input-wrapper">
-        <input type="text" id="namaTamu" placeholder="Ketik Nama Tamu..." autocomplete="off">
-      </div>
-      <button onclick="addGuest()">Generate Link</button>
-      
-      <div id="result-area">
-        <div id="result-msg" style="font-size:0.9rem; margin-bottom:15px; font-weight:600;"></div>
-        <input type="text" id="result-link" class="link-display" readonly onclick="this.select()">
-        <button onclick="copyLink()" class="btn-secondary">Salin Link WhatsApp</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="scan-qr" class="container">
-    <div class="card">
-      <h2>Scan Check-in</h2>
-      <div id="reader"></div>
-      <div id="scan-result">Siap memindai QR Code...</div>
-    </div>
-  </div>
-
-  <div id="history" class="container">
-    <div class="history-header">
-      <h2 style="margin:0; border:none; padding:0; color:#fff; font-size:1.2rem;">Live History</h2>
-      <button onclick="loadHistory()" class="btn-secondary" style="width:auto !important; padding:10px 20px !important; margin:0 !important;">Refresh</button>
-    </div>
-    
-    <div id="history-list">
-      <div style="text-align:center; color:#666; margin-top:80px; font-style:italic;">Memuat data...</div>
-    </div>
-  </div>
-
-  <nav class="nav">
-    <div class="nav-item active" onclick="showTab('add-guest')">
-      <div class="nav-icon">✨</div>
-      <div class="nav-text">Input</div>
-    </div>
-    <div class="nav-item" onclick="showTab('scan-qr')">
-      <div class="nav-icon">📷</div>
-      <div class="nav-text">Scan</div>
-    </div>
-    <div class="nav-item" onclick="showTab('history')">
-      <div class="nav-icon">📜</div>
-      <div class="nav-text">History</div>
-    </div>
-  </nav>
-
-  <script>
-    // --- NAVIGASI ---
-    function showTab(tabId) {
-      const containers = document.querySelectorAll('.container');
-      const navItems = document.querySelectorAll('.nav-item');
-      
-      containers.forEach(el => el.classList.remove('active'));
-      navItems.forEach(el => el.classList.remove('active'));
-      
-      document.getElementById(tabId).classList.add('active');
-      event.currentTarget.classList.add('active');
-      
-      // Manage Scanner State
-      if(tabId === 'scan-qr') startScanner();
-      else stopScanner();
-      
-      // Manage History State
-      if(tabId === 'history') loadHistory();
-    }
-
-    // --- ADD GUEST ---
-    function addGuest() {
-      const namaInput = document.getElementById('namaTamu');
-      const nama = namaInput.value.trim();
-      
-      if(!nama) return alert("Nama wajib diisi!");
-      
-      const btn = document.querySelector('#add-guest button:not(.btn-secondary)');
-      const originalText = btn.innerText;
-      btn.innerText = "Processing...";
-      btn.disabled = true;
-      
-      google.script.run.withSuccessHandler((res) => {
-        btn.innerText = originalText;
-        btn.disabled = false;
+    <div id="cover-screen">
+        <div class="cover-title">Mega's Day</div>
         
-        const area = document.getElementById('result-area');
-        const msgBox = document.getElementById('result-msg');
-        const linkBox = document.getElementById('result-link');
+        <div class="cover-guest-label">You Are Invited</div>
+        <div id="cover-guest-name">Loading...</div>
+
+        <button class="open-btn" onclick="openInvitation()">
+            OPEN INVITATION <span>📩</span>
+        </button>
+    </div>
+
+    <img id="bg-layer" src="https://res.cloudinary.com/dn4ugx6ar/image/upload/v1765469884/vudqobixpnpvmc3p0yhu.webp" alt="Background">
+    <div class="particle-container" id="particles"></div>
+    <audio id="bg-music" loop>
+        <source src="https://www.dimsprat.site/Event/Audio/1212.MP3" type="audio/mpeg">
+    </audio>
+
+    <div class="content" id="main-content">
         
-        area.style.display = 'block';
-        msgBox.innerText = res.msg;
-        linkBox.value = res.link;
+        <div class="guest-wrapper">
+            <span class="guest-label">Invitation For:</span>
+            <span id="guest-name">Loading...</span>
+        </div>
+
+        <h1>You Are Invited<br>to My Birthday Party</h1>
+        <div class="join-text">Join us to celebrate</div>
+        <h2>Mega's Day</h2>
+
+        <div class="details">
+            <div class="date-time">
+                16 December 2025<br>
+                Tuesday , 05PM - 09PM
+            </div>
+            
+            <div class="location">
+                at 3rd Floor (Samping Restoran Pondok Rangi), West Jakarta
+            </div>
+        </div>
+
+        <div class="quote">
+            "The years we shared while growing up are like treasures to me , I can Remember our every moment of laughter ."
+        </div>
+
+        <div class="qr-section">
+            <img id="qr-image" src="" alt="QR Code">
+            <div class="scan-text">Scan Entry</div>
+        </div>
+
+        <div class="footer">I hope to see you there !</div>
         
-        if(res.success) { 
-            msgBox.style.color = '#4caf50';
-            namaInput.value = ''; 
-        } else { 
-            msgBox.style.color = '#ff0033';
+        <div id="visualizer"></div>
+    </div>
+
+    <script>
+        // === LOGIKA UTAMA ===
+        
+        // 1. AMBIL NAMA TAMU DARI GOOGLE APPS SCRIPT
+        let guestName = '<?= guestName ?>'; 
+        if (!guestName || guestName === 'null') { guestName = "Tamu Undangan"; }
+
+        // Update Teks di Layar
+        document.getElementById('cover-guest-name').innerText = guestName;
+        document.getElementById('guest-name').innerText = guestName;
+
+        // Bikin QR Code (Isinya Link/Data untuk di-scan Admin)
+        function generateQrCode(urlScript) {
+            // Data yang di-encode adalah URL Script + marker SCAN_CHECKIN
+            const scanData = urlScript + "?action=scan&content=SCAN_CHECKIN:" + encodeURIComponent(guestName);
+            const qrUrl = `https://quickchart.io/qr?text=${scanData}&size=200&margin=1&ecLevel=M&dark=000000&light=ffffff`;
+            document.getElementById('qr-image').src = qrUrl;
         }
-      }).tambahTamuBaru(nama);
-    }
 
-    function copyLink() {
-      const copyText = document.getElementById("result-link");
-      copyText.select();
-      copyText.setSelectionRange(0, 99999);
-      
-      try {
-          document.execCommand("copy");
-          const btn = document.querySelector('#result-area .btn-secondary');
-          const originalText = btn.innerText;
-          btn.innerText = "Tersalin! ✅";
-          setTimeout(() => btn.innerText = originalText, 2000);
-      } catch (err) {
-          alert("Gagal menyalin link otomatis.");
-      }
-    }
+        // 2. RUN QR CODE GENERATION SETELAH DAPAT URL SCRIPT YANG BENAR
+        google.script.run.withSuccessHandler(generateQrCode).getUrl();
 
-    // --- SCANNER LOGIC ---
-    let html5QrcodeScanner = null;
-    
-    function startScanner() {
-      if(html5QrcodeScanner) return; 
-      
-      html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
-          fps: 10, 
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0,
-          showTorchButtonIfSupported: true,
-          rememberLastUsedCamera: true
-      });
-      html5QrcodeScanner.render(onScanSuccess, onScanFailure);
-    }
-    
-    function stopScanner() {
-      if(html5QrcodeScanner) {
-        html5QrcodeScanner.clear().catch(e => console.error("Scanner clear error:", e));
-        html5QrcodeScanner = null;
-      }
-    }
-
-    function onScanSuccess(decodedText, decodedResult) {
-      stopScanner(); 
-      
-      const resBox = document.getElementById('scan-result');
-      resBox.innerHTML = '<span style="color:var(--primary); font-weight:bold;">⏳ Verifikasi Data...</span>';
-      
-      google.script.run.withSuccessHandler((res) => {
-        const isSuccess = res.includes("SUKSES");
-        const color = isSuccess ? "#4caf50" : "#ff0033"; 
-        const icon = isSuccess ? "✅" : "⚠️";
-        
-        resBox.innerHTML = `<span style="color:${color}; font-weight:700; font-size:1.1rem;">${icon} ${res}</span>`;
-        
-        setTimeout(() => { 
-            startScanner(); 
-            resBox.innerHTML = "Siap memindai...";
-            resBox.style.color = "#ccc";
-        }, 3500);
-        
-      }).prosesScanQR(decodedText);
-    }
-    
-    function onScanFailure(error) {
-    }
-
-    // --- HISTORY LOGIC ---
-    function loadHistory() {
-      const listContainer = document.getElementById('history-list');
-      listContainer.innerHTML = '<div style="text-align:center; color:#666; margin-top:80px;">Memuat data terbaru...</div>';
-      
-      google.script.run.withSuccessHandler((data) => {
-        listContainer.innerHTML = "";
-        
-        if (data.length === 0) {
-          listContainer.innerHTML = '<div style="text-align:center; padding:50px; color:#555; font-style:italic;">Belum ada riwayat scan.</div>';
-          return;
+        // --- CEK STATUS OTOMATIS (Polling ke Apps Script) ---
+        function checkStatus() {
+            if (guestName === "Tamu Undangan") return;
+            
+            try {
+                google.script.run.withSuccessHandler(function(status) {
+                    if (status === "HADIR") {
+                       showThankYouScreen();
+                    }
+                }).cekStatusTamu(guestName);
+            } catch(e) {
+                 // Error handling jika tidak dijalankan di environment Apps Script
+            }
         }
+        setInterval(checkStatus, 5000);
+
+        function showThankYouScreen() {
+            const tyScreen = document.getElementById('thank-you-screen');
+            if (tyScreen.style.display !== 'flex') {
+                tyScreen.style.opacity = '0';
+                tyScreen.style.display = 'flex';
+                document.getElementById('main-content').style.display = 'none';
+                setTimeout(() => { tyScreen.style.opacity = '1'; }, 50);
+            }
+        }
+
+        // --- AUDIO & VISUALIZER ---
+        const audio = document.getElementById("bg-music");
+        const visualizer = document.getElementById('visualizer');
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        let analyser, dataArray;
         
-        const fragment = document.createDocumentFragment();
-        
-        data.forEach((row) => {
-          const date = new Date(row[0]);
-          const timeStr = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':');
-          
-          const isSuccess = row[2].includes("SUKSES");
-          const statusClass = isSuccess ? "success" : "fail"; 
-          const statusText = isSuccess ? "CHECK-IN" : "GAGAL";
-          
-          const itemDiv = document.createElement('div');
-          itemDiv.className = `history-item ${statusClass}`;
-          itemDiv.innerHTML = `
-              <div class="h-info">
-                <span class="h-name">${row[1]}</span>
-                <span class="h-time">${timeStr} WIB</span>
-              </div>
-              <span class="h-badge">${statusText}</span>
-          `;
-          fragment.appendChild(itemDiv);
-        });
-        
-        listContainer.appendChild(fragment);
-        
-      }).getHistoryData();
-    }
-  </script>
+        for(let i=0; i<20; i++) {
+            let b = document.createElement('div'); b.className = 'bar'; visualizer.appendChild(b);
+        }
+        const bars = document.querySelectorAll('.bar');
+
+        function openInvitation() {
+            const cover = document.getElementById('cover-screen');
+            cover.style.opacity = '0';
+            setTimeout(() => { cover.style.display = 'none'; }, 800);
+            document.getElementById('main-content').classList.add('show');
+            
+            if (audioContext.state === 'suspended') audioContext.resume();
+            audio.play().then(() => { startVisualizer(); }).catch(e => console.log("Audio play blocked until interaction"));
+        }
+
+        function startVisualizer() {
+            const source = audioContext.createMediaElementSource(audio);
+            analyser = audioContext.createAnalyser();
+            source.connect(analyser); analyser.connect(audioContext.destination);
+            analyser.fftSize = 64; dataArray = new Uint8Array(analyser.frequencyBinCount);
+            animate();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if(analyser) {
+                analyser.getByteFrequencyData(dataArray);
+                bars.forEach((bar, i) => {
+                    let h = (dataArray[i] / 255) * 30; 
+                    bar.style.height = Math.max(4, h) + 'px';
+                });
+            }
+        }
+
+        // --- PARTICLES ---
+        const pContainer = document.getElementById('particles');
+        for(let i=0; i<30; i++) {
+            let p = document.createElement('div'); p.className = 'particle';
+            let size = Math.random() * 8 + 2 + 'px';
+            p.style.width = size; p.style.height = size;
+            p.style.left = Math.random() * 100 + '%';
+            p.style.animationDuration = Math.random() * 5 + 5 + 's';
+            p.style.animationDelay = Math.random() * 5 + 's';
+            pContainer.appendChild(p);
+        }
+    </script>
 </body>
 </html>
