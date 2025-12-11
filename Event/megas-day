@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mega's Birthday Invitation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- CSS SAMA SEPERTI SEBELUMNYA --- */
+        :root { --gold: #d4af37; --dark: #1a1a1a; --cream: #f9f9f9; }
+        body {
+            margin: 0; padding: 0; background-color: var(--dark); color: var(--cream);
+            font-family: 'Montserrat', sans-serif; text-align: center;
+            display: flex; justify-content: center; align-items: center; min-height: 100vh;
+            background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=2070&auto=format&fit=crop');
+            background-size: cover; background-position: center;
+        }
+        .card {
+            background: rgba(26, 26, 26, 0.90); backdrop-filter: blur(10px);
+            border: 2px solid var(--gold); padding: 40px 20px;
+            max-width: 400px; width: 90%; border-radius: 15px;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3); margin: 20px;
+        }
+        h1 { font-weight: 300; font-size: 0.9rem; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 5px; }
+        h2 { font-family: 'Great Vibes', cursive; font-size: 3rem; color: var(--gold); margin: 10px 0 30px 0; line-height: 1.2; }
+        .details { margin: 30px 0; border-top: 1px solid rgba(212, 175, 55, 0.5); border-bottom: 1px solid rgba(212, 175, 55, 0.5); padding: 20px 0; }
+        .date-time { font-weight: 700; font-size: 1.1rem; margin-bottom: 10px; color: var(--gold); }
+        .location { font-size: 0.9rem; line-height: 1.5; }
+        .quote { font-style: italic; font-size: 0.85rem; opacity: 0.8; margin: 20px 0; line-height: 1.6; }
+        
+        .qr-section { margin-top: 20px; padding: 15px; background: white; display: inline-block; border-radius: 10px; }
+        .qr-section img { width: 150px; height: 150px; display: block; }
+        
+        .guest-greeting { margin-top: 20px; font-size: 1rem; color: var(--gold); }
+        #guest-name { font-weight: bold; text-transform: uppercase; text-decoration: underline; }
+        
+        .footer { margin-top: 30px; font-weight: 500; letter-spacing: 1px; color: var(--gold); font-size: 0.8rem;}
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h1>You Are Invited<br>to My Birthday Party</h1>
+        
+        <h2>Mega's Day</h2>
+
+        <div class="guest-greeting">
+            Special Invitation for:<br>
+            <span id="guest-name">Guest</span>
+        </div>
+
+        <div class="details">
+            <div class="date-time">
+                16 December 2025<br>
+                Tuesday, 05PM - 09PM
+            </div>
+            <div class="location">
+                at Restoran Pondok Rangi,<br>
+                West Jakarta
+            </div>
+        </div>
+
+        <p class="quote">
+            "The years we shared while growing up are like treasures to me, I can Remember our every moment of laughter."
+        </p>
+
+        <div class="qr-section">
+            <img id="qr-image" src="" alt="Loading QR...">
+            <div style="color:black; font-size:0.7rem; margin-top:5px; font-weight:bold;">SCAN TO ENTER</div>
+        </div>
+
+        <div class="footer">
+            I hope to see you there!
+        </div>
+    </div>
+
+    <script>
+        // 1. Ambil Parameter dari URL (misal: ?nama=Dimas)
+        const urlParams = new URLSearchParams(window.location.search);
+        let guestName = urlParams.get('nama'); // Mengambil nilai 'nama'
+
+        // 2. Jika tidak ada nama di URL, pakai default
+        if (!guestName) {
+            guestName = "Special Guest";
+        }
+
+        // 3. Update Teks Nama di Undangan
+        document.getElementById('guest-name').innerText = guestName;
+
+        // 4. Update Gambar QR Code sesuai Nama
+        // Kita encode URI agar spasi terbaca (misal: "Dimas Pratama" jadi "Dimas%20Pratama")
+        const qrContent = encodeURIComponent(guestName);
+        const qrUrl = `https://quickchart.io/qr?text=${qrContent}&size=300&margin=1`;
+        
+        document.getElementById('qr-image').src = qrUrl;
+    </script>
+</body>
+</html>
