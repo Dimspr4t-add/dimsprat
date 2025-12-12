@@ -1,373 +1,422 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mega's Day Invitation</title>
-    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@300;500;700&display=swap" rel="stylesheet">
-    <style>
-        /* --- RESET & BASIC SETUP --- */
-        :root {
-            --gold: #c9a227;
-            --gold-light: #ffd700;
-            --cream: #f8f5ee;
-            --dark-overlay: rgba(0, 0, 0, 0.95);
-        }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mega's Day Invitation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- RESET & BASIC SETUP --- */
+        :root {
+            --gold: #c9a227;
+            --gold-light: #ffd700;
+            --cream: #f8f5ee;
+            --dark-overlay: rgba(0, 0, 0, 0.95);
+        }
 
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; }
 
-        body {
-            margin: 0; padding: 0;
-            width: 100vw; height: 100vh;
-            overflow: hidden;
-            font-family: 'Montserrat', sans-serif;
-            color: var(--cream);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: #000;
-        }
+        body {
+            margin: 0; padding: 0;
+            width: 100vw; height: 100vh;
+            overflow: hidden;
+            font-family: 'Montserrat', sans-serif;
+            color: var(--cream);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+        }
 
-        /* --- BACKGROUND IMAGE --- */
-        #bg-layer {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            object-fit: cover; 
-            object-position: center center;
-            z-index: -10;
-            filter: brightness(0.4) blur(1px); 
-            transform: scale(1.02);
-        }
+        /* --- BACKGROUND IMAGE --- */
+        #bg-layer {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            object-fit: cover; 
+            object-position: center center;
+            z-index: -10;
+            filter: brightness(0.4) blur(1px); 
+            transform: scale(1.02);
+        }
 
-        /* --- LAYAR PEMBUKA (COVER) --- */
-        #cover-screen {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: var(--dark-overlay);
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            transition: opacity 0.8s ease-in-out;
-            text-align: center;
-            padding: 20px;
-        }
+        /* --- LAYAR PEMBUKA (COVER) --- */
+        #cover-screen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: var(--dark-overlay);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.8s ease-in-out;
+            text-align: center;
+            padding: 20px;
+        }
 
-        .cover-title {
-            font-family: 'Great Vibes', cursive;
-            font-size: 3.5rem;
-            color: var(--gold);
-            margin-bottom: 30px;
-            line-height: 1.2;
-            animation: pulse 2s infinite;
-        }
+        .cover-title {
+            font-family: 'Great Vibes', cursive;
+            font-size: 3.5rem;
+            color: var(--gold);
+            margin-bottom: 30px;
+            line-height: 1.2;
+            animation: pulse 2s infinite;
+        }
 
-        .cover-guest-label {
-            font-size: 0.8rem;
-            letter-spacing: 3px;
-            color: #ccc;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-        }
+        .cover-guest-label {
+            font-size: 0.8rem;
+            letter-spacing: 3px;
+            color: #ccc;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
 
-        #cover-guest-name {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: #fff;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 40px;
-            text-shadow: 0 0 15px var(--gold);
-            border-bottom: 1px solid var(--gold);
-            padding-bottom: 5px;
-        }
+        #cover-guest-name {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 40px;
+            text-shadow: 0 0 15px var(--gold);
+            border-bottom: 1px solid var(--gold);
+            padding-bottom: 5px;
+        }
 
-        .open-btn {
-            padding: 12px 35px;
-            background: transparent;
-            border: 1px solid var(--gold);
-            color: var(--gold-light);
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            border-radius: 30px;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 0 20px rgba(201, 162, 39, 0.2);
-            display: flex; align-items: center; gap: 10px;
-        }
+        .open-btn {
+            padding: 12px 35px;
+            background: transparent;
+            border: 1px solid var(--gold);
+            color: var(--gold-light);
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 20px rgba(201, 162, 39, 0.2);
+            display: flex; align-items: center; gap: 10px;
+        }
 
-        .open-btn:active { transform: scale(0.95); background: rgba(201, 162, 39, 0.2); }
+        .open-btn:active { transform: scale(0.95); background: rgba(201, 162, 39, 0.2); }
 
-        /* --- KARTU UNDANGAN UTAMA --- */
-        .content {
-            position: relative;
-            z-index: 10;
-            text-align: center;
-            width: 90%;
-            max-width: 400px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            background: rgba(10, 10, 10, 0.65);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(201, 162, 39, 0.5);
-            border-radius: 20px;
-            box-shadow: 0 0 40px rgba(0,0,0,0.9);
-            padding: 2vh 20px; 
-            max-height: 98vh;
-            opacity: 0;
-            transform: scale(0.9);
-            transition: all 1s ease;
-        }
+        /* --- KARTU UNDANGAN UTAMA --- */
+        .content {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(10, 10, 10, 0.65);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(201, 162, 39, 0.5);
+            border-radius: 20px;
+            box-shadow: 0 0 40px rgba(0,0,0,0.9);
+            padding: 2vh 20px; 
+            max-height: 98vh;
+            opacity: 0;
+            transform: scale(0.9);
+            transition: all 1s ease;
+        }
 
-        .content.show { opacity: 1; transform: scale(1); }
-        
-        /* Nama Tamu di Paling Atas Undangan */
-        .guest-wrapper { 
-            margin: 0.5vh 0 1vh;
-            order: -1; 
-        }
-        #guest-name {
-            font-size: clamp(1rem, 2.2vh, 1.5rem);
-            font-weight: 700; color: var(--gold-light);
-            text-transform: uppercase; letter-spacing: 1px;
-            display: block; 
-            text-shadow: 0 0 10px var(--gold);
-            background: rgba(201, 162, 39, 0.2);
-            padding: 4px 15px; 
-            border-radius: 4px;
-        }
-        
-        /* Hapus label yang tidak perlu */
-        .guest-label { display: none; } 
+        .content.show { opacity: 1; transform: scale(1); }
+        
+        /* Nama Tamu di Paling Atas Undangan */
+        .guest-wrapper { 
+            margin: 0.5vh 0 1vh;
+            order: -1; 
+        }
+        #guest-name {
+            font-size: clamp(1rem, 2.2vh, 1.5rem);
+            font-weight: 700; color: var(--gold-light);
+            text-transform: uppercase; letter-spacing: 1px;
+            display: block; 
+            text-shadow: 0 0 10px var(--gold);
+            background: rgba(201, 162, 39, 0.2);
+            padding: 4px 15px; 
+            border-radius: 4px;
+        }
+        
+        /* Hapus label yang tidak perlu */
+        .guest-label { display: none; } 
 
-        h1 {
-            font-size: clamp(0.7rem, 1.5vh, 1rem);
-            letter-spacing: 3px; text-transform: uppercase;
-            margin: 0 0 5px 0; color: var(--gold-light);
-            border-bottom: 1px solid var(--gold); padding-bottom: 5px;
-            line-height: 1.5;
-        }
-        .join-text { font-size: 0.7rem; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px; color: #ddd; }
-        h2 {
-            font-family: 'Great Vibes', cursive;
-            font-size: clamp(2.5rem, 5.5vh, 4rem);
-            color: var(--gold); margin: 0; line-height: 1.2;
-            text-shadow: 0 4px 10px rgba(0,0,0,0.5);
-        }
-        
-        .details {
-            background: rgba(0, 0, 0, 0.4);
-            border-radius: 10px; padding: 1.5vh 10px; width: 100%;
-            margin: 1vh 0; border: 1px solid rgba(255, 215, 0, 0.1);
-        }
-        .date-time { font-size: clamp(0.8rem, 1.8vh, 1.1rem); font-weight: 700; color: var(--gold); margin-bottom: 5px; line-height: 1.4; }
-        .location { font-size: clamp(0.7rem, 1.5vh, 0.9rem); line-height: 1.4; }
-        .quote { font-size: 0.7rem; font-style: italic; opacity: 0.8; margin-bottom: 1vh; padding: 0 10px; line-height: 1.4; }
+        h1 {
+            font-size: clamp(0.7rem, 1.5vh, 1rem);
+            letter-spacing: 3px; text-transform: uppercase;
+            margin: 0 0 5px 0; color: var(--gold-light);
+            border-bottom: 1px solid var(--gold); padding-bottom: 5px;
+            line-height: 1.5;
+        }
+        .join-text { font-size: 0.7rem; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px; color: #ddd; }
+        h2 {
+            font-family: 'Great Vibes', cursive;
+            font-size: clamp(2.5rem, 5.5vh, 4rem);
+            color: var(--gold); margin: 0; line-height: 1.2;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        
+        .details {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px; padding: 1.5vh 10px; width: 100%;
+            margin: 1vh 0; border: 1px solid rgba(255, 215, 0, 0.1);
+        }
+        .date-time { font-size: clamp(0.8rem, 1.8vh, 1.1rem); font-weight: 700; color: var(--gold); margin-bottom: 5px; line-height: 1.4; }
+        .location { font-size: clamp(0.7rem, 1.5vh, 0.9rem); line-height: 1.4; }
+        .quote { font-size: 0.7rem; font-style: italic; opacity: 0.8; margin-bottom: 1vh; padding: 0 10px; line-height: 1.4; }
 
-        .qr-section { background: #fff; padding: 6px; border-radius: 8px; margin: 0.5vh 0; }
-        .qr-section img { width: 10vh; height: 10vh; max-width: 100px; max-height: 100px; display: block; }
-        .scan-text { color: #000; font-weight: bold; font-size: 0.55rem; margin-top: 3px; letter-spacing: 1px; text-transform: uppercase; }
+        .qr-section { background: #fff; padding: 6px; border-radius: 8px; margin: 0.5vh 0; }
+        .qr-section img { width: 10vh; height: 10vh; max-width: 100px; max-height: 100px; display: block; }
+        .scan-text { color: #000; font-weight: bold; font-size: 0.55rem; margin-top: 3px; letter-spacing: 1px; text-transform: uppercase; }
 
-        .footer {
-            margin-top: 1vh; font-size: 0.7rem; letter-spacing: 2px;
-            color: var(--gold-light); opacity: 0.9; font-weight: bold;
-            padding-bottom: 15px; 
-        }
+        .footer {
+            margin-top: 1vh; font-size: 0.7rem; letter-spacing: 2px;
+            color: var(--gold-light); opacity: 0.9; font-weight: bold;
+            padding-bottom: 15px; 
+        }
 
-        #visualizer {
-            position: absolute; bottom: 0; left: 0; right: 0; height: 30px;
-            display: flex; justify-content: center; align-items: flex-end;
-            gap: 3px; z-index: 1; pointer-events: none; padding-bottom: 5px; opacity: 0.6;
-        }
-        .bar { width: 5px; background: var(--gold); height: 5px; border-radius: 3px 3px 0 0; transition: height 0.1s; }
+        #visualizer {
+            position: absolute; bottom: 0; left: 0; right: 0; height: 30px;
+            display: flex; justify-content: center; align-items: flex-end;
+            gap: 3px; z-index: 1; pointer-events: none; padding-bottom: 5px; opacity: 0.6;
+        }
+        .bar { width: 5px; background: var(--gold); height: 5px; border-radius: 3px 3px 0 0; transition: height 0.1s; }
 
-        .particle-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -5; pointer-events: none; }
-        .particle { position: absolute; bottom: -10px; background: var(--gold-light); border-radius: 50%; opacity: 0; animation: floatUp linear infinite; }
-        @keyframes floatUp { 0% { transform: translateY(0) scale(0.5); opacity: 0; } 50% { opacity: 0.8; } 100% { transform: translateY(-100vh) scale(1); opacity: 0; } }
-        @keyframes pulse { 0% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); opacity: 0.8; } }
+        .particle-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -5; pointer-events: none; }
+        .particle { position: absolute; bottom: -10px; background: var(--gold-light); border-radius: 50%; opacity: 0; animation: floatUp linear infinite; }
+        @keyframes floatUp { 0% { transform: translateY(0) scale(0.5); opacity: 0; } 50% { opacity: 0.8; } 100% { transform: translateY(-100vh) scale(1); opacity: 0; } }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); opacity: 0.8; } }
 
-        /* THANK YOU SCREEN */
-        #thank-you-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); z-index: 2000;
-            display: none; 
-            flex-direction: column; justify-content: center; align-items: center;
-            text-align: center; color: var(--gold);
-        }
-        .ty-title { font-family: 'Great Vibes'; font-size: 4rem; margin-bottom: 20px; animation: pulse 2s infinite; }
-        .ty-msg { font-family: 'Montserrat'; font-size: 1rem; color: #fff; letter-spacing: 2px; max-width: 80%; line-height: 1.6; }
-    </style>
+        /* THANK YOU SCREEN */
+        #thank-you-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 2000;
+            display: none; 
+            flex-direction: column; justify-content: center; align-items: center;
+            text-align: center; color: var(--gold);
+        }
+        .ty-title { font-family: 'Great Vibes'; font-size: 4rem; margin-bottom: 20px; animation: pulse 2s infinite; }
+        .ty-msg { font-family: 'Montserrat'; font-size: 1rem; color: #fff; letter-spacing: 2px; max-width: 80%; line-height: 1.6; }
+    </style>
 </head>
 <body>
 
-    <div id="thank-you-screen">
-        <div class="ty-title">Thank You</div>
-        <div class="ty-msg">
-            Your attendance has been verified.<br>
-            Please enjoy the party!
-        </div>
-        <div style="font-size:3rem; margin-top:20px;">✨</div>
-    </div>
+    <div id="thank-you-screen">
+        <div class="ty-title">Thank You</div>
+        <div class="ty-msg">
+            Your attendance has been verified.<br>
+            Please enjoy the party!
+        </div>
+        <div style="font-size:3rem; margin-top:20px;">✨</div>
+    </div>
 
-    <div id="cover-screen">
-        <div class="cover-title">Mega's Day</div>
-        
-        <div class="cover-guest-label">You Are Invited</div>
-        <div id="cover-guest-name">Loading...</div>
+    <div id="cover-screen">
+        <div class="cover-title">Mega's Day</div>
+        
+        <div class="cover-guest-label">You Are Invited</div>
+        <div id="cover-guest-name">Loading...</div>
 
-        <button class="open-btn" onclick="openInvitation()">
-            OPEN INVITATION <span>📩</span>
-        </button>
-    </div>
+        <button class="open-btn" onclick="openInvitation()">
+            OPEN INVITATION <span>📩</span>
+        </button>
+    </div>
 
-    <img id="bg-layer" src="https://res.cloudinary.com/dn4ugx6ar/image/upload/v1765469884/vudqobixpnpvmc3p0yhu.webp" alt="Background">
-    <div class="particle-container" id="particles"></div>
-    <audio id="bg-music" loop>
-        <source src="https://www.dimsprat.site/Event/Audio/1212.MP3" type="audio/mpeg">
-    </audio>
+    <img id="bg-layer" src="https://res.cloudinary.com/dn4ugx6ar/image/upload/v1765469884/vudqobixpnpvmc3p0yhu.webp" alt="Background">
+    <div class="particle-container" id="particles"></div>
+    <audio id="bg-music" loop>
+        <source src="https://www.dimsprat.site/Event/Audio/1212.MP3" type="audio/mpeg">
+    </audio>
 
-    <div class="content" id="main-content">
-        
-        <div class="guest-wrapper">
-            <span class="guest-label">Invitation For:</span>
-            <span id="guest-name">Loading...</span>
-        </div>
+    <div class="content" id="main-content">
+        
+        <div class="guest-wrapper">
+            <span class="guest-label">Invitation For:</span>
+            <span id="guest-name">Loading...</span>
+        </div>
 
-        <h1>You Are Invited<br>to My Birthday Party</h1>
-        <div class="join-text">Join us to celebrate</div>
-        <h2>Mega's Day</h2>
+        <h1>You Are Invited<br>to My Birthday Party</h1>
+        <div class="join-text">Join us to celebrate</div>
+        <h2>Mega's Day</h2>
 
-        <div class="details">
-            <div class="date-time">
-                16 December 2025<br>
-                Tuesday , 05PM - 09PM
-            </div>
-            
-            <div class="location">
-                at 3rd Floor (Samping Restoran Pondok Rangi), West Jakarta
-            </div>
-        </div>
+        <div class="details">
+            <div class="date-time">
+                16 December 2025<br>
+                Tuesday , 05PM - 09PM
+            </div>
+            
+            <div class="location">
+                at 3rd Floor (Samping Restoran Pondok Rangi), West Jakarta
+            </div>
+        </div>
 
-        <div class="quote">
-            "The years we shared while growing up are like treasures to me , I can Remember our every moment of laughter ."
-        </div>
+        <div class="quote">
+            "The years we shared while growing up are like treasures to me , I can Remember our every moment of laughter ."
+        </div>
 
-        <div class="qr-section">
-            <img id="qr-image" src="" alt="QR Code">
-            <div class="scan-text">Scan Entry</div>
-        </div>
+        <div class="qr-section">
+            <img id="qr-image" src="" alt="QR Code">
+            <div class="scan-text">Scan Entry</div>
+        </div>
 
-        <div class="footer">I hope to see you there !</div>
-        
-        <div id="visualizer"></div>
-    </div>
+        <div class="footer">I hope to see you there !</div>
+        
+        <div id="visualizer"></div>
+    </div>
 
-    <script>
-        // === LOGIKA UTAMA ===
-        
-        // 1. AMBIL NAMA TAMU DARI GOOGLE APPS SCRIPT
-        let guestName = '<?= guestName ?>'; 
-        if (!guestName || guestName === 'null') { guestName = "Tamu Undangan"; }
+    <script>
+        // URL Google Apps Script Anda
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxmbThfejeyRXhXHkkL4npo4EpIthqXr2q-vr7yBRPqIB6VNshgj2C0WEABxbJrjrp8/exec';
 
-        // Update Teks di Layar
-        document.getElementById('cover-guest-name').innerText = guestName;
-        document.getElementById('guest-name').innerText = guestName;
+        // Helper function untuk mengirim permintaan POST ke Apps Script API
+        async function sendRequest(action, data) {
+            const url = `${APPS_SCRIPT_URL}?action=${action}`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8', // Penting untuk doPost Apps Script
+                },
+                body: JSON.stringify(data),
+                mode: 'cors'
+            });
 
-        // Bikin QR Code (Isinya Link/Data untuk di-scan Admin)
-        function generateQrCode(urlScript) {
-            // Data yang di-encode adalah URL Script + marker SCAN_CHECKIN
-            const scanData = urlScript + "?action=scan&content=SCAN_CHECKIN:" + encodeURIComponent(guestName);
-            const qrUrl = `https://quickchart.io/qr?text=${scanData}&size=200&margin=1&ecLevel=M&dark=000000&light=ffffff`;
-            document.getElementById('qr-image').src = qrUrl;
+            if (!response.ok) {
+                throw new Error(`Permintaan HTTP gagal! Status: ${response.status}`);
+            }
+            return response.json();
         }
 
-        // 2. RUN QR CODE GENERATION SETELAH DAPAT URL SCRIPT YANG BENAR
-        google.script.run.withSuccessHandler(generateQrCode).getUrl();
+        // === LOGIKA UTAMA ===
+        
+        // 1. AMBIL NAMA TAMU DARI URL (Diasumsikan diisi oleh Apps Script Template/Parameter)
+        // Ketika di-host di Vercel, variabel ini harus diambil dari URL Query String (misal: ?nama=...)
+        let guestName = new URLSearchParams(window.location.search).get('nama');
+        
+        // Karena ini file guest.html yang di-embed di Apps Script, kita pertahankan logika template:
+        // let guestName = '<?= guestName ?>'; 
+        
+        // Jika ini di Vercel/GitHub Pages, pastikan logika pengambilan nama tamu adalah:
+        if (!guestName || guestName === 'null' || guestName === 'undefined') { 
+            // Jika tidak ada parameter 'nama' di URL, gunakan fallback.
+            guestName = "Tamu Undangan"; 
+        } else {
+            guestName = decodeURIComponent(guestName).trim(); // Dekode jika diambil dari URL
+        }
 
-        // --- CEK STATUS OTOMATIS (Polling ke Apps Script) ---
-        function checkStatus() {
-            if (guestName === "Tamu Undangan") return;
-            
-            try {
-                google.script.run.withSuccessHandler(function(status) {
-                    if (status === "HADIR") {
-                       showThankYouScreen();
+        // Update Teks di Layar
+        document.getElementById('cover-guest-name').innerText = guestName;
+        document.getElementById('guest-name').innerText = guestName;
+
+        // Bikin QR Code (Isinya Link/Data untuk di-scan Admin)
+        function generateQrCode() {
+            // Data yang di-encode adalah URL Script + marker SCAN_CHECKIN
+            const scanData = APPS_SCRIPT_URL + "?action=scan&content=SCAN_CHECKIN:" + encodeURIComponent(guestName);
+            // Gunakan quickchart.io untuk generate QR dari URL (ini service eksternal)
+            const qrUrl = `https://quickchart.io/qr?text=${encodeURIComponent(scanData)}&size=200&margin=1&ecLevel=M&dark=000000&light=ffffff`;
+            document.getElementById('qr-image').src = qrUrl;
+        }
+        
+        // Langsung generate QR Code saat dimuat
+        generateQrCode();
+
+        // --- CEK STATUS OTOMATIS (Polling ke Apps Script) ---
+        function checkStatus() {
+            if (guestName === "Tamu Undangan") return;
+            
+            // Mengganti google.script.run dengan sendRequest
+            sendRequest('checkStatus', { nama: guestName })
+                .then((res) => {
+                    if (res.status === "HADIR") {
+                        showThankYouScreen();
                     }
-                }).cekStatusTamu(guestName);
-            } catch(e) {
-                 // Error handling jika tidak dijalankan di environment Apps Script
-            }
-        }
-        setInterval(checkStatus, 5000);
-
-        function showThankYouScreen() {
-            const tyScreen = document.getElementById('thank-you-screen');
-            if (tyScreen.style.display !== 'flex') {
-                tyScreen.style.opacity = '0';
-                tyScreen.style.display = 'flex';
-                document.getElementById('main-content').style.display = 'none';
-                setTimeout(() => { tyScreen.style.opacity = '1'; }, 50);
-            }
-        }
-
-        // --- AUDIO & VISUALIZER ---
-        const audio = document.getElementById("bg-music");
-        const visualizer = document.getElementById('visualizer');
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        let analyser, dataArray;
-        
-        for(let i=0; i<20; i++) {
-            let b = document.createElement('div'); b.className = 'bar'; visualizer.appendChild(b);
-        }
-        const bars = document.querySelectorAll('.bar');
-
-        function openInvitation() {
-            const cover = document.getElementById('cover-screen');
-            cover.style.opacity = '0';
-            setTimeout(() => { cover.style.display = 'none'; }, 800);
-            document.getElementById('main-content').classList.add('show');
-            
-            if (audioContext.state === 'suspended') audioContext.resume();
-            audio.play().then(() => { startVisualizer(); }).catch(e => console.log("Audio play blocked until interaction"));
-        }
-
-        function startVisualizer() {
-            const source = audioContext.createMediaElementSource(audio);
-            analyser = audioContext.createAnalyser();
-            source.connect(analyser); analyser.connect(audioContext.destination);
-            analyser.fftSize = 64; dataArray = new Uint8Array(analyser.frequencyBinCount);
-            animate();
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-            if(analyser) {
-                analyser.getByteFrequencyData(dataArray);
-                bars.forEach((bar, i) => {
-                    let h = (dataArray[i] / 255) * 30; 
-                    bar.style.height = Math.max(4, h) + 'px';
+                })
+                .catch((e) => {
+                    console.error("Status check failed:", e);
                 });
-            }
-        }
+        }
+        setInterval(checkStatus, 5000);
 
-        // --- PARTICLES ---
-        const pContainer = document.getElementById('particles');
-        for(let i=0; i<30; i++) {
-            let p = document.createElement('div'); p.className = 'particle';
-            let size = Math.random() * 8 + 2 + 'px';
-            p.style.width = size; p.style.height = size;
-            p.style.left = Math.random() * 100 + '%';
-            p.style.animationDuration = Math.random() * 5 + 5 + 's';
-            p.style.animationDelay = Math.random() * 5 + 's';
-            pContainer.appendChild(p);
-        }
-    </script>
+        function showThankYouScreen() {
+            const tyScreen = document.getElementById('thank-you-screen');
+            if (tyScreen.style.display !== 'flex') {
+                tyScreen.style.opacity = '0';
+                tyScreen.style.display = 'flex';
+                document.getElementById('main-content').style.display = 'none';
+                setTimeout(() => { tyScreen.style.opacity = '1'; }, 50);
+            }
+        }
+
+        // --- AUDIO & VISUALIZER ---
+        const audio = document.getElementById("bg-music");
+        const visualizer = document.getElementById('visualizer');
+        let audioContext, analyser, dataArray;
+        
+        try {
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        } catch(e) {
+          console.warn("AudioContext not supported or restricted.");
+        }
+        
+        if(visualizer) {
+          for(let i=0; i<20; i++) {
+              let b = document.createElement('div'); b.className = 'bar'; visualizer.appendChild(b);
+          }
+        }
+        const bars = document.querySelectorAll('.bar');
+
+        function openInvitation() {
+            const cover = document.getElementById('cover-screen');
+            cover.style.opacity = '0';
+            setTimeout(() => { cover.style.display = 'none'; }, 800);
+            document.getElementById('main-content').classList.add('show');
+            
+            if (audioContext) {
+                if (audioContext.state === 'suspended') audioContext.resume();
+                audio.play().then(() => { startVisualizer(); }).catch(e => console.log("Audio play blocked until interaction, try manually playing."));
+            }
+        }
+
+        function startVisualizer() {
+            if (!audioContext || analyser) return;
+            
+            const source = audioContext.createMediaElementSource(audio);
+            analyser = audioContext.createAnalyser();
+            source.connect(analyser); analyser.connect(audioContext.destination);
+            analyser.fftSize = 64; dataArray = new Uint8Array(analyser.frequencyBinCount);
+            animate();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if(analyser && bars.length > 0) {
+                analyser.getByteFrequencyData(dataArray);
+                bars.forEach((bar, i) => {
+                    const dataIndex = Math.floor(i * (dataArray.length / bars.length));
+                    let h = (dataArray[dataIndex] / 255) * 30; 
+                    bar.style.height = Math.max(4, h) + 'px';
+                });
+            }
+        }
+
+        // --- PARTICLES ---
+        const pContainer = document.getElementById('particles');
+        for(let i=0; i<30; i++) {
+            let p = document.createElement('div'); p.className = 'particle';
+            let size = Math.random() * 8 + 2 + 'px';
+            p.style.width = size; p.style.height = size;
+            p.style.left = Math.random() * 100 + '%';
+            p.style.animationDuration = Math.random() * 5 + 5 + 's';
+            p.style.animationDelay = Math.random() * 5 + 's';
+            pContainer.appendChild(p);
+        }
+        
+        // Cek status saat pertama kali dibuka jika sudah tidak di cover screen
+        checkStatus();
+    </script>
 </body>
 </html>
