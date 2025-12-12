@@ -6,7 +6,7 @@
     <title>Mega's Day Invitation</title>
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@300;500;700&display=swap" rel="stylesheet">
     <style>
-        /* --- RESET & BASIC SETUP --- */
+        /* --- CSS Anda tetap sama --- */
         :root {
             --gold: #c9a227;
             --gold-light: #ffd700;
@@ -276,60 +276,69 @@
         // Helper function untuk mengirim permintaan POST ke Apps Script API
         async function sendRequest(action, data) {
             const url = `${APPS_SCRIPT_URL}?action=${action}`;
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'text/plain;charset=utf-8', // Penting untuk doPost Apps Script
-                },
-                body: JSON.stringify(data),
-                mode: 'cors'
-            });
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8', 
+                    },
+                    body: JSON.stringify(data),
+                    mode: 'cors'
+                });
 
-            if (!response.ok) {
-                throw new Error(`Permintaan HTTP gagal! Status: ${response.status}`);
+                if (!response.ok) {
+                    throw new Error(`Permintaan HTTP gagal! Status: ${response.status}`);
+                }
+                return response.json();
+            } catch (error) {
+                console.error("Fetch failed:", error);
+                throw error; // Meneruskan error
             }
-            return response.json();
         }
-
+        
         // === LOGIKA UTAMA ===
         
-        // 1. AMBIL NAMA TAMU DARI URL (Diasumsikan diisi oleh Apps Script Template/Parameter)
-        // Ketika di-host di Vercel, variabel ini harus diambil dari URL Query String (misal: ?nama=...)
-        let guestName = new URLSearchParams(window.location.search).get('nama');
-        
-        // Karena ini file guest.html yang di-embed di Apps Script, kita pertahankan logika template:
-        // let guestName = '<?= guestName ?>'; 
-        
-        // Jika ini di Vercel/GitHub Pages, pastikan logika pengambilan nama tamu adalah:
-        if (!guestName || guestName === 'null' || guestName === 'undefined') { 
-            // Jika tidak ada parameter 'nama' di URL, gunakan fallback.
+        // 1. AMBIL KODE UNIK DARI URL
+        let params = new URLSearchParams(window.location.search);
+        // Mengambil kode unik dari parameter 'id' (sesuai logic Code.gs)
+        let uniqueCode = params.get('id'); 
+        
+        // 2. AMBIL NAMA TAMU DARI APPS SCRIPT TEMPLATE 
+        // Nama tamu sudah di-resolve oleh doGet berdasarkan 'id' dan diteruskan ke sini
+        let guestName = '<?= guestName ?>'; 
+
+        if (!guestName || guestName === 'null' || guestName === 'undefined') { 
             guestName = "Tamu Undangan"; 
-        } else {
-            guestName = decodeURIComponent(guestName).trim(); // Dekode jika diambil dari URL
-        }
+        } 
+        if (!uniqueCode) {
+            uniqueCode = "ERR"; 
+            // Menonaktifkan polling status jika tidak ada ID yang valid
+            console.error("Error: Unique Code (ID) tidak ditemukan di URL.");
+        }
+
 
         // Update Teks di Layar
         document.getElementById('cover-guest-name').innerText = guestName;
         document.getElementById('guest-name').innerText = guestName;
 
-        // Bikin QR Code (Isinya Link/Data untuk di-scan Admin)
+        // Bikin QR Code (Menggunakan Kode Unik/ID)
         function generateQrCode() {
-            // Data yang di-encode adalah URL Script + marker SCAN_CHECKIN
-            const scanData = APPS_SCRIPT_URL + "?action=scan&content=SCAN_CHECKIN:" + encodeURIComponent(guestName);
-            // Gunakan quickchart.io untuk generate QR dari URL (ini service eksternal)
+            if (uniqueCode === "ERR") return;
+            // Data yang di-encode adalah URL Script + marker SCAN_CHECKIN + Kode Unik
+            const scanData = APPS_SCRIPT_URL + "?action=scan&content=SCAN_CHECKIN:" + encodeURIComponent(uniqueCode);
             const qrUrl = `https://quickchart.io/qr?text=${encodeURIComponent(scanData)}&size=200&margin=1&ecLevel=M&dark=000000&light=ffffff`;
             document.getElementById('qr-image').src = qrUrl;
         }
         
-        // Langsung generate QR Code saat dimuat
+        // Langsung generate QR Code
         generateQrCode();
 
         // --- CEK STATUS OTOMATIS (Polling ke Apps Script) ---
         function checkStatus() {
-            if (guestName === "Tamu Undangan") return;
+            if (uniqueCode === "ERR" || guestName === "Tamu Undangan") return;
             
-            // Mengganti google.script.run dengan sendRequest
-            sendRequest('checkStatus', { nama: guestName })
+            // Menggunakan sendRequest untuk cek status berdasarkan Kode Unik
+            sendRequest('checkStatus', { uniqueCode: uniqueCode })
                 .then((res) => {
                     if (res.status === "HADIR") {
                         showThankYouScreen();
@@ -354,19 +363,19 @@
         // --- AUDIO & VISUALIZER ---
         const audio = document.getElementById("bg-music");
         const visualizer = document.getElementById('visualizer');
+        // Menggunakan try/catch karena AudioContext mungkin diblokir
         let audioContext, analyser, dataArray;
-        
-        try {
+        try {
           audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        } catch(e) {
-          console.warn("AudioContext not supported or restricted.");
-        }
+        } catch(e) {
+            console.warn("AudioContext not supported or restricted.");
+        }
         
-        if(visualizer) {
-          for(let i=0; i<20; i++) {
-              let b = document.createElement('div'); b.className = 'bar'; visualizer.appendChild(b);
-          }
-        }
+        if (visualizer) {
+            for(let i=0; i<20; i++) {
+                let b = document.createElement('div'); b.className = 'bar'; visualizer.appendChild(b);
+            }
+        }
         const bars = document.querySelectorAll('.bar');
 
         function openInvitation() {
@@ -377,13 +386,13 @@
             
             if (audioContext) {
                 if (audioContext.state === 'suspended') audioContext.resume();
-                audio.play().then(() => { startVisualizer(); }).catch(e => console.log("Audio play blocked until interaction, try manually playing."));
+                audio.play().then(() => { startVisualizer(); }).catch(e => console.log("Audio play blocked until interaction"));
             }
         }
 
         function startVisualizer() {
-            if (!audioContext || analyser) return;
-            
+            if (!audioContext || analyser) return;
+            
             const source = audioContext.createMediaElementSource(audio);
             analyser = audioContext.createAnalyser();
             source.connect(analyser); analyser.connect(audioContext.destination);
@@ -393,10 +402,10 @@
 
         function animate() {
             requestAnimationFrame(animate);
-            if(analyser && bars.length > 0) {
+            if(analyser) {
                 analyser.getByteFrequencyData(dataArray);
                 bars.forEach((bar, i) => {
-                    const dataIndex = Math.floor(i * (dataArray.length / bars.length));
+                    const dataIndex = Math.floor(i * (dataArray.length / bars.length));
                     let h = (dataArray[dataIndex] / 255) * 30; 
                     bar.style.height = Math.max(4, h) + 'px';
                 });
@@ -414,9 +423,9 @@
             p.style.animationDelay = Math.random() * 5 + 's';
             pContainer.appendChild(p);
         }
-        
-        // Cek status saat pertama kali dibuka jika sudah tidak di cover screen
-        checkStatus();
+
+        // Panggil status check saat dimuat
+        checkStatus(); 
     </script>
 </body>
 </html>
