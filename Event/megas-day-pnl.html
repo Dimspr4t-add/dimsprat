@@ -506,6 +506,7 @@
             const scanResultDiv = document.getElementById('scan-result');
             
             if (!html5QrcodeScanner) {
+                // Menggunakan Html5Qrcode dasar untuk kontrol UI manual
                 html5QrcodeScanner = new Html5Qrcode(readerId);
             }
             
@@ -514,13 +515,14 @@
                 qrbox: { width: 250, height: 250 },
             };
 
+            // Memulai pemindaian secara manual (menyembunyikan UI default)
             html5QrcodeScanner.start(
-                { facingMode: { exact: "environment" } }, 
+                { facingMode: { exact: "environment" } }, // Kamera belakang
                 config,
                 onScanSuccess,
                 (errorMessage) => { /* ignore continuous error */ }
             ).catch(err => {
-                console.error("Gagal memulai scanner:", err);
+                console.error("Gagal memulai scanner (Cek izin kamera atau ketersediaan):", err);
                 scanResultDiv.innerHTML = `<span style="color:var(--primary); font-weight:bold;">❌ Gagal membuka kamera. Cek izin browser.</span>`;
             });
             
@@ -532,7 +534,7 @@
                 html5QrcodeScanner.stop().catch(err => {
                     console.log("Error stopping scanner: ", err);
                 });
-                html5QrcodeScanner = null; 
+                html5QrcodeScanner = null; // Reset
             }
         }
         
@@ -547,6 +549,7 @@
             setTimeout(startScanner, 3000); 
         }
 
+        // Mengirim Kode Unik ke Apps Script (Logika Check-in)
         async function sendCheckInRequest(code) {
             const scanResultDiv = document.getElementById('scan-result');
             try {
@@ -582,13 +585,15 @@
                             ` : `<p style="margin:5px 0; color:var(--primary); font-size:0.8rem;">Kode tidak terdaftar dalam sistem.</p>`}
                         </div>
                     `;
+                } else if (data.status === 'fail' && data.kode) {
+                     htmlContent += `<p style="margin-top:10px; font-size:0.9rem;">Kode ${data.kode} tidak terdaftar.</p>`;
                 }
                 
                 scanResultDiv.innerHTML = htmlContent;
 
             } catch (error) {
                 console.error("Check-in Error:", error);
-                scanResultDiv.innerHTML = '<span style="color:var(--primary); font-weight:bold;">❌ Error Jaringan/Skrip.</span>';
+                scanResultDiv.innerHTML = '<span style="color:var(--primary); font-weight:bold;">❌ Error Jaringan/Skrip.</span><p style="margin-top:5px; font-size:0.8rem;">Cek koneksi internet Anda.</p>';
             }
         }
 
@@ -626,7 +631,7 @@
 
                     data.history.forEach(item => {
                         const isHadir = item.status === 'HADIR';
-                        const itemClass = isHadir ? 'success' : 'fail';
+                        const itemClass = item.rowClass; // Menggunakan rowClass dari Apps Script
                         const badgeText = isHadir ? 'HADIR' : 'BELUM HADIR';
                         const timeText = isHadir ? item.time : '';
 
