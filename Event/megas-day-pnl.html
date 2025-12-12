@@ -426,7 +426,7 @@
         </div>
 
         <div id="history-list">
-            <div style="text-align:center; color:#666; margin-top:80px; font-style:italic;">Memuat data...</div>
+            <div style="text-align:center; color:#666; margin-top:80px; font-style:italic;">Fitur ini belum diaktifkan.</div>
         </div>
     </div>
 
@@ -447,11 +447,11 @@
 
     <script>
         // =======================================================================
-        // ⚠️ GANTI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA YANG BERAKHIR /exec
+        // URL WEB APP GOOGLE APPS SCRIPT ANDA YANG TELAH DISIMPAN
         // =======================================================================
-        const googleAppScriptURL = 'PASTE_URL_WEB_APP_ANDA_DI_SINI'; 
+        const googleAppScriptURL = 'https://script.google.com/macros/s/AKfycbzANeVqUwGAImpQ5_DCRyHW0tU8KUhGRaiI6dROVPeGupJuG0pWP7oUh1uFXCFc6kJd/exec'; 
         
-        let html5QrcodeScanner = null; // Inisialisasi Scanner
+        let html5QrcodeScanner = null; 
 
         // Fungsi Navigasi
         window.showTab = (tabId) => {
@@ -482,30 +482,41 @@
 
         function startScanner() {
             const scanResultDiv = document.getElementById('scan-result');
+            const readerId = "reader";
             
             if (!html5QrcodeScanner) {
+                // Inisialisasi scanner hanya sekali
                 html5QrcodeScanner = new Html5QrcodeScanner(
-                    "reader", { 
+                    readerId, { 
                         fps: 10, 
-                        qrbox: { width: 250, height: 250 } 
+                        qrbox: { width: 250, height: 250 },
+                        // Konfigurasi EKSPLISIT untuk kamera belakang
+                        videoConstraints: {
+                            facingMode: { exact: "environment" } 
+                        }
                     }, 
                     false
                 );
             }
             
-            // Render scanner dan set callback
+            // Render scanner
             html5QrcodeScanner.render(onScanSuccess, onScanError);
             scanResultDiv.textContent = 'Siap memindai QR Code...';
         }
 
         function stopScanner() {
-            if (html5QrcodeScanner && html5QrcodeScanner.isScanning) {
-                html5QrcodeScanner.clear();
+            if (html5QrcodeScanner) {
+                // Menggunakan .stop() yang disediakan oleh library
+                html5QrcodeScanner.stop().catch(err => {
+                    console.log("Error stopping scanner: ", err);
+                });
+                html5QrcodeScanner = null; // Reset scanner
             }
         }
         
         async function onScanSuccess(decodedText, decodedResult) {
-            stopScanner(); // Hentikan scanner segera
+            stopScanner(); // Hentikan scanner segera setelah scan berhasil
+            
             const scanResultDiv = document.getElementById('scan-result');
             scanResultDiv.textContent = `Memproses Kode: ${decodedText}...`;
             
@@ -528,7 +539,6 @@
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    // Kirim action 'checkIn' dan kode unik
                     body: `action=checkIn&code=${encodeURIComponent(code)}`
                 });
 
@@ -630,8 +640,8 @@
                     });
             });
 
-            // Pastikan scanner dihentikan saat pertama kali dimuat
-            stopScanner();
+            // Inisialisasi: Pastikan tab 'add-guest' yang aktif dan scanner dihentikan
+            showTab('add-guest');
         });
 
     </script>
