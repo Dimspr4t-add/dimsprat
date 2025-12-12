@@ -523,20 +523,20 @@
         function startStatusCheck() {
             if (statusCheckInterval) clearInterval(statusCheckInterval); // Bersihkan interval lama
             
-            // Lakukan cek status pertama kali
+            // 1. Cek status pertama kali saat halaman dimuat
             checkStatus().then(isCheckedIn => {
                 if (isCheckedIn) {
-                    showThankYouScreen(); // <-- KUNCI DI SINI
+                    showThankYouScreen(); // <-- PENGUNCI AGRESIF SAAT MEMUAT
                     return;
                 }
             });
             
-            // Lanjutkan cek setiap 5 detik (polling)
+            // 2. Lanjutkan cek setiap 5 detik (polling) untuk mendeteksi check-in realtime
             statusCheckInterval = setInterval(async () => {
                 const isCheckedIn = await checkStatus();
                 if (isCheckedIn) {
                     clearInterval(statusCheckInterval);
-                    showThankYouScreen(); // <-- KUNCI DI SINI JIKA STATUS BERUBAH
+                    showThankYouScreen(); // <-- PENGUNCI SAAT PERUBAHAN STATUS DARI ADMIN
                 }
             }, 5000);
         }
@@ -564,33 +564,35 @@
         }
 
         // Fungsi untuk membuka undangan
-        function openInvitation() {
+        async function openInvitation() {
             const cover = document.getElementById('cover-screen');
             const mainContent = document.getElementById('main-content');
             
-            // Periksa status terakhir sebelum membuka
-            checkStatus().then(isCheckedIn => {
-                if (isCheckedIn) {
-                    showThankYouScreen(); // Kunci jika status HADIR
-                    return;
-                }
+            // Periksa status terakhir SEBELUM membuka
+            const isCheckedIn = await checkStatus();
+            
+            if (isCheckedIn) {
+                showThankYouScreen(); // Kunci jika status HADIR
+                return;
+            }
+            
+            // Jika BELUM HADIR, lanjutkan membuka konten
+            
+            // Animasi fade out cover
+            cover.style.transition = 'opacity 1s ease-out';
+            cover.style.opacity = '0';
+            
+            // Tampilkan konten utama setelah animasi selesai
+            setTimeout(() => {
+                cover.style.display = 'none';
+                mainContent.style.display = 'flex'; // Tampilkan sebagai flex
+                mainContent.classList.add('show');
                 
-                // Animasi fade out cover
-                cover.style.transition = 'opacity 1s ease-out';
-                cover.style.opacity = '0';
-                
-                // Tampilkan konten utama setelah animasi selesai
-                setTimeout(() => {
-                    cover.style.display = 'none';
-                    mainContent.style.display = 'flex'; // Tampilkan sebagai flex
-                    mainContent.classList.add('show');
-                    
-                    // Mulai audio
-                    const audio = document.getElementById('bg-music');
-                    audio.volume = 0.3;
-                    audio.play().catch(e => console.log('Audio play failed:', e));
-                }, 800);
-            });
+                // Mulai audio
+                const audio = document.getElementById('bg-music');
+                audio.volume = 0.3;
+                audio.play().catch(e => console.log('Audio play failed:', e));
+            }, 800);
         }
         
         // Fungsi untuk inisialisasi partikel (tidak berubah)
