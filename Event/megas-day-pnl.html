@@ -450,7 +450,13 @@
         // Inisialisasi variabel
         let html5QrScanner = null;
         const API_URL = 'https://script.google.com/macros/s/AKfycbzANeVqUwGAImpQ5_DCRyHW0tU8KUhGRaiI6dROVPeGupJuG0pWP7oUh1uFXCFc6kJd/exec';
+        const BASE_URL = 'https://www.dimsprat.site/Event/megas-day.html';
         let currentTab = 'add-guest';
+        
+        // Fungsi untuk generate link undangan
+        function generateInvitationLink(uniqueCode) {
+            return `${BASE_URL}?id=${encodeURIComponent(uniqueCode)}`;
+        }
 
         // Inisialisasi saat DOM siap
         document.addEventListener('DOMContentLoaded', () => {
@@ -539,7 +545,8 @@
                     // Tampilkan hasil
                     document.getElementById('result-name').textContent = name;
                     document.getElementById('result-code').textContent = result.data.uniqueCode;
-                    document.getElementById('invitation-link').value = result.data.invitationLink;
+                    const invitationLink = generateInvitationLink(result.data.uniqueCode);
+                    document.getElementById('invitation-link').value = invitationLink;
                     document.getElementById('guest-result').style.display = 'block';
                     
                     // Reset form
