@@ -12,8 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   
   <style>
-    /* ... (CSS Anda tetap sama) ... */
-     /* --- RED THEME VARIABLES --- */
+    /* --- RED THEME VARIABLES --- */
     :root {
       --primary: #ff0033;         
       --primary-dark: #b30024;
@@ -312,6 +311,9 @@
   </nav>
 
   <script>
+    // --- PENAMBAHAN APPS_SCRIPT_URL (Untuk Referensi Jika Pindah ke Hosting Eksternal) ---
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxmbThfejeyRXhXHkkL4npo4EpIthqXr2q-vr7yBRPqIB6VNshgj2C0WEABxbJrjrp8/exec';
+
     // --- NAVIGASI ---
     function showTab(tabId) {
       const containers = document.querySelectorAll('.container');
@@ -322,7 +324,7 @@
       
       document.getElementById(tabId).classList.add('active');
       
-      // Fix: Dapatkan elemen yang diklik secara dinamis berdasarkan tabId
+      // Dapatkan elemen yang diklik secara dinamis berdasarkan tabId
       const targetNavItem = document.querySelector(`.nav-item[onclick*="showTab('${tabId}')"]`);
       if (targetNavItem) {
           targetNavItem.classList.add('active');
@@ -334,20 +336,14 @@
       if(tabId === 'history') loadHistory();
     }
     
-    // Panggil showTab untuk inisialisasi pada saat DOMContentLoaded
+    // Inisialisasi tab aktif saat DOM siap
     document.addEventListener('DOMContentLoaded', () => {
-        // Panggil showTab untuk tab default saat halaman dimuat
-        // Gunakan elemen default yang memiliki class 'active' atau panggil langsung 'add-guest'
-        const defaultActiveNav = document.querySelector('.nav-item.active');
-        if (defaultActiveNav) {
-            // Memastikan logika showTab dijalankan untuk inisialisasi
-            // Tapi menghindari event.currentTarget error jika dipanggil tanpa event.
-            // Kita biarkan inisialisasi default dari HTML, lalu tambahkan event listener
-        }
+        // Asumsi 'add-guest' adalah tab default
+        // Di lingkungan GAS, ini akan diinisialisasi secara default oleh HTML dan kemudian dikonfirmasi oleh JS.
     });
 
 
-    // --- ADD GUEST (FIXED STUCK PROCESSING) ---
+    // --- ADD GUEST ---
     function addGuest() {
       const namaInput = document.getElementById('namaTamu');
       const nama = namaInput.value.trim();
@@ -422,7 +418,6 @@
     function startScanner() {
       if(html5QrcodeScanner) return; 
       
-      // Reset hasil scan saat memulai
       document.getElementById('scan-result').innerHTML = "Siap memindai QR Code...";
 
       html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
@@ -437,7 +432,6 @@
     
     function stopScanner() {
       if(html5QrcodeScanner) {
-        // Tangani promise clear untuk menghindari error
         html5QrcodeScanner.clear().then(() => {
             html5QrcodeScanner = null;
         }).catch(e => {
@@ -468,21 +462,19 @@
         }, 3500);
         
       }).withFailureHandler((error) => {
-          // Tangani kegagalan komunikasi Apps Script
           const resBox = document.getElementById('scan-result');
           resBox.innerHTML = `<span style="color:#ff0033; font-weight:700;">❌ Error Server: ${error.message}</span>`;
-          setTimeout(() => { startScanner(); }, 3500); // Restart scanner setelah timeout
+          setTimeout(() => { startScanner(); }, 3500); 
       }).prosesScanQR(decodedText);
     }
     
     function onScanFailure(error) {
-        // Biarkan kosong, ini normal ketika scanner mencari QR Code
     }
 
     // --- HISTORY LOGIC ---
     function loadHistory() {
       const listContainer = document.getElementById('history-list');
-      listContainer.innerHTML = '<div style="text-align:center; color:#666; margin-top:80px;">Memuat data terbaru...</div>';
+      listContainer.innerHTML = '<div style="text-align:center; color:#666; margin-top:80px; font-style:italic;">Memuat data terbaru...</div>';
       
       // Menggunakan google.script.run
       google.script.run.withSuccessHandler((data) => {
@@ -496,7 +488,6 @@
         const fragment = document.createDocumentFragment();
         
         data.forEach((row) => {
-          // Row[0] adalah objek Date, pastikan penanganan error jika null/invalid
           let date = new Date(row[0]);
           const timeStr = date instanceof Date && !isNaN(date) ? 
                           date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':') : 
@@ -505,7 +496,7 @@
           const status = row[2] || "BELUM HADIR";
           const isSuccess = status.includes("SUKSES");
           const statusClass = isSuccess ? "success" : "fail"; 
-          const statusText = isSuccess ? "CHECK-IN" : "BELUM HADIR"; // Ganti GAGAL menjadi BELUM HADIR
+          const statusText = isSuccess ? "CHECK-IN" : "BELUM HADIR"; 
           
           const itemDiv = document.createElement('div');
           itemDiv.className = `history-item ${statusClass}`;
