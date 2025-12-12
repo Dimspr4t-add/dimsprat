@@ -564,7 +564,13 @@
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Terjadi kesalahan. Silakan coba lagi.');
+                let errorMessage = 'Terjadi kesalahan. Silakan coba lagi.';
+                if (error.message.includes('Failed to fetch')) {
+                    errorMessage = 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.';
+                } else if (error.message.includes('HTTP error')) {
+                    errorMessage = `Kesalahan server: ${error.message}`;
+                }
+                alert(errorMessage);
             } finally {
                 // Reset button state
                 btn.disabled = false;
