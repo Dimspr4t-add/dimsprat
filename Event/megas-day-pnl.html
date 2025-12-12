@@ -1,30 +1,28 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="id">
 <head>
     <base target="_top">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Admin Panel - Mega's Day</title>
-
+    
+    <!-- External Resources -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
     <style>
-        /* --- RED THEME VARIABLES --- */
         :root {
             --primary: #ff0033;
             --primary-dark: #b30024;
             --text-white: #ffffff;
             --text-muted: #b0b0b0;
-
-            --glass-bg: rgba(20, 20, 20, 0.70);
+            --bg-dark: #121212;
+            --bg-darker: #0a0a0a;
+            --glass-bg: rgba(20, 20, 20, 0.7);
             --glass-border: rgba(255, 255, 255, 0.1);
             --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.7);
             --blur-amt: 12px;
-
             --header-h: 70px;
             --nav-h: 70px;
             --z-header: 1000;
@@ -34,6 +32,8 @@
 
         * {
             box-sizing: border-box;
+            margin: 0;
+            padding: 0;
             -webkit-tap-highlight-color: transparent;
         }
 
@@ -42,14 +42,14 @@
             color: var(--text-white);
             margin: 0;
             padding: 0;
-            padding-top: calc(var(--header-h) + 25px);
-            padding-bottom: calc(var(--nav-h) + 30px);
+            padding-top: calc(var(--header-h) + 10px);
+            padding-bottom: calc(var(--nav-h) + 10px);
             min-height: 100vh;
             background-color: var(--bg-dark);
             position: relative;
         }
 
-        /* BACKGROUND BLUR IMPLEMENTATION */
+        /* Background Blur */
         body::before {
             content: '';
             position: fixed;
@@ -65,14 +65,14 @@
             pointer-events: none;
         }
 
-        /* --- 1. HEADER (Fixed Glass) --- */
+        /* Header */
         .app-header {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: var(--header-h);
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.8);
             backdrop-filter: blur(15px);
             -webkit-backdrop-filter: blur(15px);
             display: flex;
@@ -89,9 +89,9 @@
             filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
         }
 
-        /* --- 2. CONTAINER & CARD --- */
+        /* Container & Card */
         .container {
-            padding: 0 20px;
+            padding: 0 15px;
             max-width: 480px;
             margin: 0 auto;
             display: none;
@@ -102,225 +102,147 @@
             display: block;
         }
 
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
         .card {
             background: var(--glass-bg);
             backdrop-filter: blur(var(--blur-amt));
             -webkit-backdrop-filter: blur(var(--blur-amt));
             border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            padding: 30px 25px;
-            box-shadow: var(--glass-shadow);
-            text-align: center;
-        }
-
-        h2 {
-            margin: 0 0 25px 0;
-            font-size: 1.1rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: var(--primary);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            padding-bottom: 15px;
-        }
-
-        /* --- 3. FORMS & BUTTONS --- */
-        .input-wrapper {
-            margin-bottom: 25px;
-        }
-
-        input[type="text"] {
-            width: 100%;
-            padding: 16px 20px;
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid var(--glass-border);
             border-radius: 12px;
-            color: var(--text-white);
-            font-family: 'Poppins', sans-serif;
-            font-size: 1rem;
-            outline: none;
-            transition: all 0.3s ease;
-        }
-
-        input[type="text"]:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 15px rgba(255, 0, 51, 0.3);
-            background: rgba(0, 0, 0, 0.7);
-        }
-
-        button {
-            width: 100%;
-            padding: 16px;
-            border-radius: 50px;
-            border: none;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: var(--text-white);
-            font-weight: 700;
-            font-size: 0.95rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            cursor: pointer;
-            box-shadow: 0 8px 20px rgba(255, 0, 51, 0.25);
-            font-family: 'Poppins', sans-serif;
-            transition: transform 0.2s, box-shadow 0.3s;
-        }
-
-        button:active {
-            transform: scale(0.97);
-        }
-
-        button:hover {
-            box-shadow: 0 10px 25px rgba(255, 0, 51, 0.4);
-        }
-
-        /* Result Area */
-        #result-area {
-            margin-top: 25px;
-            background: rgba(0, 0, 0, 0.4);
             padding: 20px;
-            border-radius: 12px;
-            border: 1px dashed rgba(255, 0, 51, 0.3);
-            display: none;
+            margin-bottom: 20px;
+            box-shadow: var(--glass-shadow);
         }
 
-        .link-display {
-            width: 100%;
-            background: transparent;
-            border: none;
-            color: var(--primary);
-            font-size: 0.85rem;
-            text-align: center;
-            margin: 10px 0;
-            font-family: monospace;
-            font-weight: bold;
-        }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.08) !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            box-shadow: none !important;
-            margin-top: 10px;
-            font-size: 0.85rem !important;
-            padding: 12px !important;
-            color: var(--text-muted) !important;
-        }
-
-        .btn-secondary:hover {
-            color: var(--text-white) !important;
-            border-color: var(--text-white) !important;
-        }
-
-        /* --- 4. SCANNER UI --- */
-        #reader {
-            width: 100%;
-            border-radius: 16px;
-            overflow: hidden;
-            border: 2px solid #333;
-            background: #000;
-            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
-        }
-
-        #scan-result {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.05);
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            border: 1px solid var(--glass-border);
-        }
-
-        /* --- 5. HISTORY LIST --- */
-        .history-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        /* Form Elements */
+        .form-group {
             margin-bottom: 20px;
         }
 
-        .history-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 20px;
-            margin-bottom: 12px;
-            background: rgba(30, 30, 30, 0.6);
-            border-radius: 12px;
-            border-left: 4px solid #444;
-            transition: transform 0.2s, background 0.2s;
-        }
-
-        .history-item:hover {
-            transform: translateX(5px);
-            background: rgba(40, 40, 40, 0.8);
-        }
-
-        .history-item.success {
-            border-left-color: #4caf50;
-        }
-
-        .history-item.fail {
-            border-left-color: var(--primary);
-        }
-
-        .h-info {
-            text-align: left;
-        }
-
-        .h-name {
-            font-weight: 600;
-            font-size: 1rem;
-            color: var(--text-white);
+        .form-label {
             display: block;
-            margin-bottom: 4px;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: var(--text-white);
         }
 
-        .h-time {
-            font-size: 0.75rem;
-            color: var(--text-muted);
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-white);
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            transition: all 0.3s ease;
         }
 
-        .h-badge {
-            font-size: 0.7rem;
-            font-weight: 700;
-            padding: 5px 10px;
-            border-radius: 20px;
-            background: rgba(255, 255, 255, 0.08);
-            color: var(--text-muted);
-            letter-spacing: 0.5px;
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(255, 0, 51, 0.2);
         }
 
-        /* --- 6. FLOATING NAVIGATION --- */
-        .nav {
-            position: fixed;
-            bottom: 25px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 90%;
-            max-width: 360px;
-            height: var(--nav-h);
-            background: rgba(15, 15, 15, 0.85);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: 35px;
-            display: flex;
-            justify-content: space-evenly;
+        .btn {
+            display: inline-flex;
             align-items: center;
-            border: 1px solid rgba(255, 0, 51, 0.1);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #e6002e;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 0, 51, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-white);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* QR Scanner */
+        #qr-reader {
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto 20px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        #qr-reader__scan_region {
+            text-align: center;
+        }
+
+        #qr-reader__dashboard_section_csr {
+            padding: 15px;
+        }
+
+        /* History Table */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .table th,
+        .table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .table th {
+            font-weight: 600;
+            color: var(--primary);
+            background: rgba(255, 0, 51, 0.1);
+        }
+
+        .table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: var(--nav-h);
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
             z-index: var(--z-nav);
+            border-top: 1px solid var(--glass-border);
+            padding: 5px 0;
         }
 
         .nav-item {
@@ -328,329 +250,550 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            color: #666;
-            cursor: pointer;
-            width: 70px;
-            height: 100%;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.75rem;
+            padding: 8px 15px;
+            border-radius: 8px;
             transition: all 0.3s ease;
-            position: relative;
+            background: none;
+            border: none;
+            cursor: pointer;
         }
 
-        .nav-icon {
-            font-size: 1.5rem;
-            margin-bottom: 2px;
-            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        .nav-item i {
+            font-size: 1.4rem;
+            margin-bottom: 4px;
         }
 
-        .nav-text {
-            font-size: 0.65rem;
-            font-weight: 600;
-            opacity: 0;
-            transform: translateY(10px);
-            transition: all 0.3s;
-            position: absolute;
-            bottom: 12px;
-            color: var(--primary);
-            letter-spacing: 1px;
-        }
-
-        /* Active State */
         .nav-item.active {
             color: var(--primary);
+            background: rgba(255, 0, 51, 0.1);
         }
 
-        .nav-item.active .nav-icon {
-            transform: translateY(-10px) scale(1.1);
-            filter: drop-shadow(0 0 8px var(--primary));
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        .nav-item.active .nav-text {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        /* Red Dot Indicator */
-        .nav-item.active::after {
-            content: '';
-            position: absolute;
-            top: 15px;
-            width: 6px;
-            height: 6px;
-            background: var(--primary);
+        /* Loading Spinner */
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
-            box-shadow: 0 0 8px var(--primary);
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 480px) {
+            .container {
+                padding: 0 10px;
+            }
+            
+            .card {
+                padding: 15px;
+            }
+            
+            .btn {
+                padding: 10px 20px;
+                font-size: 0.9rem;
+            }
+            
+            .table th,
+            .table td {
+                padding: 8px 10px;
+                font-size: 0.8rem;
+            }
         }
     </style>
 </head>
-
 <body>
-
+    <!-- Header -->
     <header class="app-header">
-        <img src="https://www.dimsprat.site/Assets/images/logo.png" alt="Dimsprat" class="header-logo-img">
+        <img src="https://www.dimsprat.site/Assets/images/Logo.png" alt="Mega's Day" class="header-logo-img">
     </header>
 
-    <div id="add-guest" class="container active">
-        <div class="card">
-            <h2>Buat Undangan Baru</h2>
-            <div class="input-wrapper">
-                <input type="text" id="namaTamu" placeholder="Ketik Nama Tamu..." autocomplete="off">
+    <!-- Main Content -->
+    <main>
+        <!-- Add Guest Tab -->
+        <div id="add-guest" class="container active">
+            <div class="card">
+                <h2 style="margin-bottom: 20px; color: var(--primary);">Tambah Tamu</h2>
+                <div class="form-group">
+                    <label for="guest-name" class="form-label">Nama Tamu</label>
+                    <input type="text" id="guest-name" class="form-control" placeholder="Masukkan nama tamu">
+                </div>
+                <button id="add-guest-btn" class="btn btn-primary" onclick="addGuest()">
+                    <span class="btn-text">Tambah Tamu</span>
+                    <span class="spinner" style="display: none;"></span>
+                </button>
             </div>
-            <button onclick="addGuest()">Generate Link</button>
-
-            <div id="result-area">
-                <div id="result-msg" style="font-size:0.9rem; margin-bottom:15px; font-weight:600;"></div>
-                <input type="text" id="result-link" class="link-display" readonly onclick="this.select()">
-                <button onclick="copyLink()" class="btn-secondary">Salin Link WhatsApp</button>
+            
+            <div class="card" id="guest-result" style="display: none;">
+                <h3 style="margin-bottom: 15px; color: var(--primary);">Data Tamu</h3>
+                <div class="form-group">
+                    <label class="form-label">Nama</label>
+                    <div class="form-control" style="background: rgba(255, 255, 255, 0.05);">
+                        <span id="result-name"></span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Kode Unik</label>
+                    <div class="form-control" style="background: rgba(255, 255, 255, 0.05);">
+                        <span id="result-code"></span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Link Undangan</label>
+                    <div style="display: flex;">
+                        <input type="text" id="invitation-link" class="form-control" readonly 
+                               style="border-top-right-radius: 0; border-bottom-right-radius: 0;">
+                        <button id="copy-link" class="btn btn-secondary" 
+                                style="width: auto; border-top-left-radius: 0; border-bottom-left-radius: 0;">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+                <button id="share-wa" class="btn btn-primary" style="background: #25D366;">
+                    <i class="fab fa-whatsapp"></i> Bagikan via WhatsApp
+                </button>
             </div>
         </div>
-    </div>
 
-    <div id="scan-qr" class="container">
-        <div class="card">
-            <h2>Scan Check-in</h2>
-            <div id="reader"></div>
-            <div id="scan-result">Siap memindai QR Code...</div>
+        <!-- Scanner Tab -->
+        <div id="scanner" class="container">
+            <div class="card">
+                <h2 style="margin-bottom: 20px; color: var(--primary);">Pemindai QR Code</h2>
+                <div id="qr-reader"></div>
+                <div id="qr-reader-results" style="margin-top: 15px; text-align: center;"></div>
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button id="start-scanner" class="btn btn-primary" style="flex: 1;">
+                        <i class="fas fa-qrcode"></i> Mulai Scan
+                    </button>
+                    <button id="stop-scanner" class="btn btn-secondary" style="flex: 1; display: none;">
+                        <i class="fas fa-stop"></i> Stop
+                    </button>
+                </div>
+            </div>
+            
+            <div class="card" id="scan-result" style="display: none;">
+                <h3 style="margin-bottom: 15px; color: var(--primary);">Hasil Scan</h3>
+                <div id="scan-result-content"></div>
+            </div>
         </div>
-    </div>
 
-    <div id="history" class="container">
-        <div class="history-header">
-            <h2 style="margin:0; border:none; padding:0; color:#fff; font-size:1.2rem;">Live History</h2>
-            <button onclick="loadHistory()" class="btn-secondary" style="width:auto !important; padding:10px 20px !important; margin:0 !important;">Refresh</button>
+        <!-- History Tab -->
+        <div id="history" class="container">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h2 style="color: var(--primary); margin: 0;">Riwayat Kehadiran</h2>
+                    <button id="refresh-history" class="btn btn-secondary" style="width: auto; padding: 8px 12px;">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Nama</th>
+                                <th>Kode</th>
+                                <th>Waktu</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-list">
+                            <tr>
+                                <td colspan="3" style="text-align: center; padding: 20px;">
+                                    <div class="spinner"></div>
+                                    <p>Memuat data...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
+    </main>
 
-        <div id="history-list">
-            <div style="text-align:center; color:#666; margin-top:80px; font-style:italic;">Memuat data...</div>
-        </div>
-    </div>
-
-    <nav class="nav">
-        <div class="nav-item active" onclick="showTab('add-guest')">
-            <div class="nav-icon">✨</div>
-            <div class="nav-text">Input</div>
-        </div>
-        <div class="nav-item" onclick="showTab('scan-qr')">
-            <div class="nav-icon">📷</div>
-            <div class="nav-text">Scan</div>
-        </div>
-        <div class="nav-item" onclick="showTab('history')">
-            <div class="nav-icon">📜</div>
-            <div class="nav-text">History</div>
-        </div>
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <button class="nav-item active" onclick="showTab('add-guest')">
+            <i class="fas fa-user-plus"></i>
+            <span>Tambah Tamu</span>
+        </button>
+        <button class="nav-item" onclick="showTab('scanner')">
+            <i class="fas fa-qrcode"></i>
+            <span>Scanner</span>
+        </button>
+        <button class="nav-item" onclick="showTab('history')">
+            <i class="fas fa-history"></i>
+            <span>Riwayat</span>
+        </button>
     </nav>
 
     <script>
-        // --- PENAMBAHAN APPS_SCRIPT_URL (Untuk Referensi Jika Pindah ke Hosting Eksternal) ---
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzANeVqUwGAImpQ5_DCRyHW0tU8KUhGRaiI6dROVPeGupJuG0pWP7oUh1uFXCFc6kJd/exec';
+        // Inisialisasi variabel
+        let html5QrScanner = null;
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzANeVqUwGAImpQ5_DCRyHW0tU8KUhGRaiI6dROVPeGupJuG0pWP7oUh1uFXCFc6kJd/exec';
+        let currentTab = 'add-guest';
 
-        // --- NAVIGASI ---
-        function showTab(tabId) {
-            const containers = document.querySelectorAll('.container');
-            const navItems = document.querySelectorAll('.nav-item');
-
-            containers.forEach(el => el.classList.remove('active'));
-            navItems.forEach(el => el.classList.remove('active'));
-
-            document.getElementById(tabId).classList.add('active');
-
-            // Dapatkan elemen yang diklik secara dinamis berdasarkan tabId
-            const targetNavItem = document.querySelector(`.nav-item[onclick*="showTab('${tabId}')"]`);
-            if (targetNavItem) {
-                targetNavItem.classList.add('active');
-            }
-
-            if (tabId === 'scan-qr') startScanner();
-            else stopScanner();
-
-            if (tabId === 'history') loadHistory();
-        }
-
-        // Inisialisasi tab aktif saat DOM siap
+        // Inisialisasi saat DOM siap
         document.addEventListener('DOMContentLoaded', () => {
-            // Asumsi 'add-guest' adalah tab default
-            // Di lingkungan GAS, ini akan diinisialisasi secara default oleh HTML dan kemudian dikonfirmasi oleh JS.
+            // Inisialisasi tab pertama
+            showTab('add-guest');
+            
+            // Event listener untuk tombol refresh history
+            document.getElementById('refresh-history').addEventListener('click', loadHistory);
+            
+            // Event listener untuk tombol copy link
+            document.getElementById('copy-link').addEventListener('click', copyLink);
+            
+            // Event listener untuk tombol share WhatsApp
+            document.getElementById('share-wa').addEventListener('click', shareViaWhatsApp);
+            
+            // Event listener untuk tombol scanner
+            document.getElementById('start-scanner').addEventListener('click', startScanner);
+            document.getElementById('stop-scanner').addEventListener('click', stopScanner);
+            
+            // Load data history saat pertama kali buka tab history
+            document.querySelector('.nav-item[onclick*="history"]').addEventListener('click', loadHistory);
         });
 
-
-        // --- ADD GUEST ---
-        function addGuest() {
-            const namaInput = document.getElementById('namaTamu');
-            const nama = namaInput.value.trim();
-
-            if (!nama) return alert("Nama wajib diisi!");
-
-            const btn = document.querySelector('#add-guest button:not(.btn-secondary)');
-            const originalText = btn.innerText;
-
-            btn.innerText = "Processing...";
-            btn.disabled = true;
-
-            const successHandler = (res) => {
-                btn.innerText = originalText;
-                btn.disabled = false;
-
-                const area = document.getElementById('result-area');
-                const msgBox = document.getElementById('result-msg');
-                const linkBox = document.getElementById('result-link');
-
-                area.style.display = 'block';
-                msgBox.innerText = res.msg;
-                linkBox.value = res.link;
-
-                if (res.success) {
-                    msgBox.style.color = '#4caf50';
-                    namaInput.value = '';
-                } else {
-                    msgBox.style.color = '#ff0033';
-                }
-            };
-
-            const failureHandler = (error) => {
-                btn.innerText = originalText;
-                btn.disabled = false;
-
-                const area = document.getElementById('result-area');
-                const msgBox = document.getElementById('result-msg');
-
-                area.style.display = 'block';
-                msgBox.innerText = `ERROR KOMUNIKASI: Gagal terhubung ke server. (${error.message})`;
-                msgBox.style.color = '#ff0033';
-                document.getElementById('result-link').value = '---';
-            };
-
-            // Menggunakan google.script.run
-            google.script.run
-                .withSuccessHandler(successHandler)
-                .withFailureHandler(failureHandler)
-                .tambahTamuBaru(nama);
-        }
-
-        function copyLink() {
-            const copyText = document.getElementById("result-link");
-            copyText.select();
-            copyText.setSelectionRange(0, 99999);
-
-            try {
-                document.execCommand("copy");
-                const btn = document.querySelector('#result-area .btn-secondary');
-                const originalText = btn.innerText;
-                btn.innerText = "Tersalin! ✅";
-                setTimeout(() => btn.innerText = originalText, 2000);
-            } catch (err) {
-                alert("Gagal menyalin link otomatis.");
-            }
-        }
-
-        // --- SCANNER LOGIC ---
-        let html5QrcodeScanner = null;
-
-        function startScanner() {
-            if (html5QrcodeScanner) return;
-
-            document.getElementById('scan-result').innerHTML = "Siap memindai QR Code...";
-
-            html5QrcodeScanner = new Html5QrcodeScanner("reader", {
-                fps: 10,
-                qrbox: {
-                    width: 250,
-                    height: 250
-                },
-                aspectRatio: 1.0,
-                showTorchButtonIfSupported: true,
-                rememberLastUsedCamera: true
+        // Fungsi untuk menampilkan tab
+        function showTab(tabId) {
+            // Sembunyikan semua tab
+            document.querySelectorAll('.container').forEach(tab => {
+                tab.classList.remove('active');
             });
-            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
-        }
-
-        function stopScanner() {
-            if (html5QrcodeScanner) {
-                html5QrcodeScanner.clear().then(() => {
-                    html5QrcodeScanner = null;
-                }).catch(e => {
-                    console.error("Scanner clear error:", e);
-                    html5QrcodeScanner = null;
-                });
+            
+            // Tampilkan tab yang dipilih
+            document.getElementById(tabId).classList.add('active');
+            
+            // Update active state di navigasi
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Set tab yang aktif
+            currentTab = tabId;
+            
+            // Jika tab scanner aktif, mulai scanner
+            if (tabId === 'scanner' && !html5QrScanner) {
+                startScanner();
+            }
+            // Jika tab scanner tidak aktif, hentikan scanner
+            else if (tabId !== 'scanner' && html5QrScanner) {
+                stopScanner();
             }
         }
 
-        function onScanSuccess(decodedText, decodedResult) {
-            stopScanner();
-
-            const resBox = document.getElementById('scan-result');
-            resBox.innerHTML = '<span style="color:var(--primary)">⏳ Verifikasi Data...</span>';
-
-            // Menggunakan google.script.run
-            google.script.run.withSuccessHandler((res) => {
-                const isSuccess = res.includes("SUKSES");
-                const color = isSuccess ? "#4caf50" : "#ff0033";
-                const icon = isSuccess ? "✅" : "⚠️";
-
-                resBox.innerHTML = `<span style="color:${color}; font-weight:700; font-size:1.1rem;">${icon} ${res}</span>`;
-
-                setTimeout(() => {
-                    startScanner();
-                    resBox.innerHTML = "Siap memindai...";
-                    resBox.style.color = "#ccc";
-                }, 3500);
-
-            }).withFailureHandler((error) => {
-                const resBox = document.getElementById('scan-result');
-                resBox.innerHTML = `<span style="color:#ff0033; font-weight:700;">❌ Error Server: ${error.message}</span>`;
-                setTimeout(() => {
-                    startScanner();
-                }, 3500);
-            }).prosesScanQR(decodedText);
+        // Fungsi untuk menambahkan tamu
+        async function addGuest() {
+            const nameInput = document.getElementById('guest-name');
+            const name = nameInput.value.trim();
+            const btn = document.getElementById('add-guest-btn');
+            const btnText = btn.querySelector('.btn-text');
+            const spinner = btn.querySelector('.spinner');
+            
+            if (!name) {
+                alert('Nama tidak boleh kosong');
+                return;
+            }
+            
+            try {
+                // Tampilkan loading state
+                btn.disabled = true;
+                btnText.textContent = 'Memproses...';
+                spinner.style.display = 'inline-block';
+                
+                // Kirim permintaan ke server
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'addGuest',
+                        nama: name
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Tampilkan hasil
+                    document.getElementById('result-name').textContent = name;
+                    document.getElementById('result-code').textContent = result.data.uniqueCode;
+                    document.getElementById('invitation-link').value = result.data.invitationLink;
+                    document.getElementById('guest-result').style.display = 'block';
+                    
+                    // Reset form
+                    nameInput.value = '';
+                    
+                    // Scroll ke hasil
+                    document.getElementById('guest-result').scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    alert(result.message || 'Gagal menambahkan tamu');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Terjadi kesalahan. Silakan coba lagi.');
+            } finally {
+                // Reset button state
+                btn.disabled = false;
+                btnText.textContent = 'Tambah Tamu';
+                spinner.style.display = 'none';
+            }
         }
 
-        function onScanFailure(error) {}
+        // Fungsi untuk menyalin link undangan
+        function copyLink() {
+            const linkInput = document.getElementById('invitation-link');
+            linkInput.select();
+            document.execCommand('copy');
+            
+            // Tampilkan feedback
+            const copyBtn = document.getElementById('copy-link');
+            const originalHtml = copyBtn.innerHTML;
+            copyBtn.innerHTML = '<i class="fas fa-check"></i> Tersalin!';
+            
+            setTimeout(() => {
+                copyBtn.innerHTML = originalHtml;
+            }, 2000);
+        }
 
-        // --- HISTORY LOGIC ---
-        function loadHistory() {
-            const listContainer = document.getElementById('history-list');
-            listContainer.innerHTML = '<div style="text-align:center; color:#666; margin-top:80px; font-style:italic;">Memuat data terbaru...</div>';
+        // Fungsi untuk berbagi via WhatsApp
+        function shareViaWhatsApp() {
+            const link = document.getElementById('invitation-link').value;
+            const name = document.getElementById('result-name').textContent;
+            const message = `Hai, Anda diundang ke acara Mega's Day!\n\nNama: ${name}\nLink Undangan: ${link}`;
+            
+            window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+        }
 
-            // Menggunakan google.script.run
-            google.script.run.withSuccessHandler((data) => {
-                listContainer.innerHTML = "";
+        // Fungsi untuk memulai scanner QR
+        function startScanner() {
+            const scannerContainer = document.getElementById('qr-reader');
+            const resultContainer = document.getElementById('qr-reader-results');
+            const startBtn = document.getElementById('start-scanner');
+            const stopBtn = document.getElementById('stop-scanner');
+            
+            // Hapus scanner lama jika ada
+            if (html5QrScanner) {
+                html5QrScanner.clear();
+            }
+            
+            // Kosongkan hasil sebelumnya
+            resultContainer.innerHTML = '';
+            
+            // Inisialisasi scanner
+            html5QrScanner = new Html5QrcodeScanner(
+                "qr-reader", 
+                { 
+                    fps: 10, 
+                    qrbox: 250 
+                },
+                /* verbose= */ false
+            );
+            
+            // Handle hasil scan
+            html5QrScanner.render(onScanSuccess, onScanFailure);
+            
+            // Update UI
+            startBtn.style.display = 'none';
+            stopBtn.style.display = 'block';
+            
+            // Tampilkan pesan
+            resultContainer.innerHTML = '<p style="color: var(--primary);">Arahkan kamera ke QR Code tamu</p>';
+        }
 
-                if (data.length === 0) {
-                    listContainer.innerHTML = '<div style="text-align:center; padding:50px; color:#555; font-style:italic;">Belum ada riwayat scan.</div>';
-                    return;
-                }
-
-                const fragment = document.createDocumentFragment();
-
-                data.forEach((row) => {
-                    let date = new Date(row[0]);
-                    const timeStr = date instanceof Date && !isNaN(date) ?
-                        date.toLocaleTimeString('id-ID', {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                        }).replace('.', ':') :
-                        'N/A';
-
-                    const status = row[2] || "BELUM HADIR";
-                    const isSuccess = status.includes("SUKSES");
-                    const statusClass = isSuccess ? "success" : "fail";
-                    const statusText = isSuccess ? "CHECK-IN" : "BELUM HADIR";
-
-                    const itemDiv = document.createElement('div');
-                    itemDiv.className = `history-item ${statusClass}`;
-                    itemDiv.innerHTML = `
-              <div class="h-info">
-                <span class="h-name">${row[1] || 'Nama Kosong'}</span>
-                <span class="h-time">${timeStr} WIB</span>
-              </div>
-              <span class="h-badge">${statusText}</span>
-          `;
-                    fragment.appendChild(itemDiv);
+        // Fungsi untuk menghentikan scanner
+        function stopScanner() {
+            if (html5QrScanner) {
+                html5QrScanner.clear().catch(error => {
+                    console.error("Gagal menghentikan scanner: ", error);
                 });
+                html5QrScanner = null;
+            }
+            
+            // Update UI
+            document.getElementById('start-scanner').style.display = 'block';
+            document.getElementById('stop-scanner').style.display = 'none';
+            document.getElementById('qr-reader-results').innerHTML = '';
+        }
 
-                listContainer.appendChild(fragment);
+        // Callback saat scan berhasil
+        async function onScanSuccess(decodedText, decodedResult) {
+            const resultContainer = document.getElementById('qr-reader-results');
+            const scanResult = document.getElementById('scan-result');
+            const scanResultContent = document.getElementById('scan-result-content');
+            
+            // Tampilkan loading
+            resultContainer.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Memproses...</p>';
+            
+            try {
+                // Kirim data ke server
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'scanQR',
+                        scanContent: decodedText
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Tampilkan hasil sukses
+                    resultContainer.innerHTML = '<p style="color: #4CAF50;"><i class="fas fa-check-circle"></i> ' + result.message + '</p>';
+                    
+                    // Tampilkan detail tamu di card hasil
+                    scanResultContent.innerHTML = `
+                        <div style="text-align: center; padding: 15px 0;">
+                            <div style="font-size: 2.5rem; color: #4CAF50; margin-bottom: 10px;">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <h3 style="color: #4CAF50; margin-bottom: 10px;">Check-in Berhasil!</h3>
+                            <p>Kode: <strong>${decodedText}</strong></p>
+                            <p style="margin-top: 10px;">${new Date().toLocaleString()}</p>
+                        </div>
+                    `;
+                    
+                    // Perbarui history jika sedang di tab history
+                    if (currentTab === 'history') {
+                        loadHistory();
+                    }
+                } else {
+                    // Tampilkan error
+                    resultContainer.innerHTML = '<p style="color: #f44336;"><i class="fas fa-exclamation-circle"></i> ' + (result.message || 'Gagal memproses QR Code') + '</p>';
+                    
+                    // Tampilkan detail error di card hasil
+                    scanResultContent.innerHTML = `
+                        <div style="text-align: center; padding: 15px 0;">
+                            <div style="font-size: 2.5rem; color: #f44336; margin-bottom: 10px;">
+                                <i class="fas fa-times-circle"></i>
+                            </div>
+                            <h3 style="color: #f44336; margin-bottom: 10px;">Gagal Check-in</h3>
+                            <p>${result.message || 'Terjadi kesalahan'}</p>
+                            <p style="margin-top: 15px;">
+                                <button class="btn btn-primary" onclick="startScanner()">
+                                    <i class="fas fa-redo"></i> Coba Lagi
+                                </button>
+                            </p>
+                        </div>
+                    `;
+                }
+                
+                // Tampilkan card hasil
+                scanResult.style.display = 'block';
+                scanResult.scrollIntoView({ behavior: 'smooth' });
+                
+                // Hentikan scanner setelah berhasil
+                stopScanner();
+                
+            } catch (error) {
+                console.error('Error:', error);
+                resultContainer.innerHTML = '<p style="color: #f44336;"><i class="fas fa-exclamation-circle"></i> Terjadi kesalahan</p>';
+            }
+        }
 
-            }).getHistoryData();
+        // Callback saat scan gagal
+        function onScanFailure(error) {
+            // Handle scan failure
+            console.error('QR Code scan error:', error);
+        }
+
+        // Fungsi untuk memuat riwayat
+        async function loadHistory() {
+            const historyList = document.getElementById('history-list');
+            const refreshBtn = document.getElementById('refresh-history');
+            
+            try {
+                // Tampilkan loading
+                historyList.innerHTML = `
+                    <tr>
+                        <td colspan="3" style="text-align: center; padding: 20px;">
+                            <div class="spinner"></div>
+                            <p>Memuat data...</p>
+                        </td>
+                    </tr>
+                `;
+                
+                // Kirim permintaan ke server
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'getHistory'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success && result.data && result.data.length > 0) {
+                    // Tampilkan data history
+                    let html = '';
+                    result.data.forEach(item => {
+                        html += `
+                            <tr>
+                                <td>${item['Nama'] || '-'}</td>
+                                <td>${item['Kode Unik'] || '-'}</td>
+                                <td>${new Date(item['Waktu Check-in']).toLocaleString() || '-'}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    historyList.innerHTML = html;
+                } else {
+                    // Tampilkan pesan jika tidak ada data
+                    historyList.innerHTML = `
+                        <tr>
+                            <td colspan="3" style="text-align: center; padding: 20px; color: var(--text-muted);">
+                                <i class="fas fa-inbox" style="font-size: 2rem; opacity: 0.5; margin-bottom: 10px; display: block;"></i>
+                                <p>Belum ada data kehadiran</p>
+                            </td>
+                        </tr>
+                    `;
+                }
+                
+            } catch (error) {
+                console.error('Error loading history:', error);
+                historyList.innerHTML = `
+                    <tr>
+                        <td colspan="3" style="text-align: center; padding: 20px; color: #f44336;">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <p>Gagal memuat data. Silakan coba lagi.</p>
+                            <button class="btn btn-secondary" onclick="loadHistory()" style="margin-top: 10px;">
+                                <i class="fas fa-sync-alt"></i> Muat Ulang
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            } finally {
+                // Reset tombol refresh
+                refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+            }
         }
     </script>
 </body>
-
 </html>
