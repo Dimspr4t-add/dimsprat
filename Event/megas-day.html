@@ -468,7 +468,7 @@
             // Generate QR Code (QR Code ID is the unique code)
             generateQrCode();
             
-            // Mulai cek status segera
+            // Mulai cek status segera (Ini yang akan mengunci jika sudah hadir)
             startStatusCheck();
             
             // Inisialisasi partikel
@@ -526,17 +526,17 @@
             // Lakukan cek status pertama kali
             checkStatus().then(isCheckedIn => {
                 if (isCheckedIn) {
-                    showThankYouScreen();
+                    showThankYouScreen(); // <-- KUNCI DI SINI
                     return;
                 }
             });
             
-            // Lanjutkan cek setiap 5 detik
+            // Lanjutkan cek setiap 5 detik (polling)
             statusCheckInterval = setInterval(async () => {
                 const isCheckedIn = await checkStatus();
                 if (isCheckedIn) {
                     clearInterval(statusCheckInterval);
-                    showThankYouScreen();
+                    showThankYouScreen(); // <-- KUNCI DI SINI JIKA STATUS BERUBAH
                 }
             }, 5000);
         }
@@ -571,7 +571,7 @@
             // Periksa status terakhir sebelum membuka
             checkStatus().then(isCheckedIn => {
                 if (isCheckedIn) {
-                    showThankYouScreen();
+                    showThankYouScreen(); // Kunci jika status HADIR
                     return;
                 }
                 
