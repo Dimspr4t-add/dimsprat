@@ -532,12 +532,17 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json'
                     },
                     body: JSON.stringify({
                         action: 'addGuest',
                         nama: name
                     })
                 });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 
                 const result = await response.json();
                 
@@ -555,7 +560,7 @@
                     // Scroll ke hasil
                     document.getElementById('guest-result').scrollIntoView({ behavior: 'smooth' });
                 } else {
-                    alert(result.message || 'Gagal menambahkan tamu');
+                    throw new Error(result.message || 'Gagal menambahkan tamu');
                 }
             } catch (error) {
                 console.error('Error:', error);
