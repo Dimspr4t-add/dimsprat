@@ -441,9 +441,60 @@
             return params;
         }
 
+        // --- VALIDASI & INIALISASI UTAMA ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = getQueryParams();
+            const guestName = urlParams['nama'];
+            const uniqueCode = urlParams['id'];
+
+            // 1. VALIDASI AKSES: Periksa apakah parameter kunci ada
+            if (!uniqueCode || !guestName) {
+                document.getElementById('error-screen').classList.add('show');
+                return; 
+            }
+
+            // Inisialisasi Konfigurasi
+            APP_CONFIG.guestName = guestName;
+            APP_CONFIG.uniqueCode = uniqueCode;
+
+            // Terapkan nama tamu ke Cover dan Konten Utama
+            document.getElementById('cover-guest-name').textContent = guestName;
+            document.getElementById('guest-name-main').textContent = guestName;
+
+            // Tampilkan Cover Screen (sebelumnya disembunyikan)
+            document.getElementById('cover-screen').style.display = 'flex';
+            document.getElementById('cover-screen').style.opacity = '1';
+
+            // Generate QR Code (QR Code ID is the unique code)
+            generateQrCode();
+            
+            // Mulai cek status segera (Ini yang akan mengunci jika sudah hadir)
+            startStatusCheck();
+            
+            // Inisialisasi partikel
+            initParticles();
+        });
+
+
+        // Fungsi untuk generate QR Code
+        function generateQrCode() {
+            if (!APP_CONFIG.uniqueCode) return;
+            
+            document.getElementById('qrcode').innerHTML = '';
+            
+            new QRCode(document.getElementById('qrcode'), {
+                text: APP_CONFIG.uniqueCode, // QR berisi Kode Unik untuk discan
+                width: 180,
+                height: 180,
+                colorDark: '#000000',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }
+
         /**
          * Fungsi untuk mengecek status kehadiran ke Apps Script.
-         * @returns {Promise<boolean>} Resolves ke True jika sudah HADIR.
+         * @returns {boolean} True jika sudah HADIR.
          */
         async function checkStatus() {
             if (!APP_CONFIG.uniqueCode) return false;
@@ -468,6 +519,28 @@
             }
         }
 
+        // Fungsi untuk memulai pengecekan status (polling)
+        function startStatusCheck() {
+            if (statusCheckInterval) clearInterval(statusCheckInterval); // Bersihkan interval lama
+            
+            // 1. Cek status pertama kali saat halaman dimuat
+            checkStatus().then(isCheckedIn => {
+                if (isCheckedIn) {
+                    showThankYouScreen(); // <-- PENGUNCI AGRESIF SAAT MEMUAT
+                    return;
+                }
+            });
+            
+            // 2. Lanjutkan cek setiap 5 detik (polling) untuk mendeteksi check-in realtime
+            statusCheckInterval = setInterval(async () => {
+                const isCheckedIn = await checkStatus();
+                if (isCheckedIn) {
+                    clearInterval(statusCheckInterval);
+                    showThankYouScreen(); // <-- PENGUNCI SAAT PERUBAHAN STATUS DARI ADMIN
+                }
+            }, 5000);
+        }
+
         // Fungsi untuk menampilkan layar terima kasih (Pengunci)
         function showThankYouScreen() {
             const cover = document.getElementById('cover-screen');
@@ -490,34 +563,12 @@
             if (statusCheckInterval) clearInterval(statusCheckInterval);
         }
 
-        // Fungsi untuk memulai pengecekan status (polling)
-        function startStatusCheck() {
-            if (statusCheckInterval) clearInterval(statusCheckInterval);
-            
-            // Cek status pertama kali saat halaman dimuat
-            checkStatus().then(isCheckedIn => {
-                if (isCheckedIn) {
-                    showThankYouScreen();
-                    return;
-                }
-            });
-            
-            // Lanjutkan cek setiap 5 detik (polling) untuk mendeteksi check-in realtime
-            statusCheckInterval = setInterval(async () => {
-                const isCheckedIn = await checkStatus();
-                if (isCheckedIn) {
-                    clearInterval(statusCheckInterval);
-                    showThankYouScreen(); 
-                }
-            }, 5000);
-        }
-
         // Fungsi untuk membuka undangan
         async function openInvitation() {
             const cover = document.getElementById('cover-screen');
             const mainContent = document.getElementById('main-content');
             
-            // **PENGUATAN LOGIKA KUNCI:** Periksa status terakhir sebelum memulai animasi.
+            // Periksa status terakhir SEBELUM membuka
             const isCheckedIn = await checkStatus();
             
             if (isCheckedIn) {
@@ -565,41 +616,6 @@
                 container.appendChild(particle);
             }
         }
-
-
-        // --- LOGIKA UTAMA SAAT DOM SIAP ---
-        document.addEventListener('DOMContentLoaded', () => {
-            const urlParams = getQueryParams();
-            const guestName = urlParams['nama'];
-            const uniqueCode = urlParams['id'];
-
-            // 1. VALIDASI AKSES: Periksa apakah parameter kunci ada
-            if (!uniqueCode || !guestName) {
-                document.getElementById('error-screen').classList.add('show');
-                return; 
-            }
-
-            // Inisialisasi Konfigurasi
-            APP_CONFIG.guestName = guestName;
-            APP_CONFIG.uniqueCode = uniqueCode;
-
-            // Terapkan nama tamu ke Cover dan Konten Utama
-            document.getElementById('cover-guest-name').textContent = guestName;
-            document.getElementById('guest-name-main').textContent = guestName;
-
-            // Tampilkan Cover Screen (sebelumnya disembunyikan)
-            document.getElementById('cover-screen').style.display = 'flex';
-            document.getElementById('cover-screen').style.opacity = '1';
-
-            // Generate QR Code 
-            generateQrCode();
-            
-            // Mulai cek status segera (Ini akan mengunci jika sudah hadir)
-            startStatusCheck();
-            
-            // Inisialisasi partikel
-            initParticles();
-        });
     </script>
 </body>
 </html>
