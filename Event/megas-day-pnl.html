@@ -462,288 +462,308 @@
         </div>
     </nav>
 
-    <script>
-        // =======================================================================
-        // URL WEB APP GOOGLE APPS SCRIPT ANDA
-        // =======================================================================
-        const googleAppScriptURL = 'https://script.google.com/macros/s/AKfycbzANeVqUwGAImpQ5_DCRyHW0tU8KUhGRaiI6dROVPeGupJuG0pWP7oUh1uFXCFc6kJd/exec'; 
+// =======================================================================
+// KODE JAVASCRIPT UNTUK megas-day-pnl.html (MODIFIKASI SCANNER)
+// =======================================================================
+<script>
+    // URL Apps Script Anda
+    const googleAppScriptURL = 'https://script.google.com/macros/s/AKfycbzANeVqUwGAImpQ5_DCRyHW0tU8KUhGRaiI6dROVPeGupJuG0pWP7oUh1uFXCFc6kJd/exec'; 
+    
+    let html5QrcodeScanner = null; 
+    const readerId = "reader";
+    let isScannerActive = false; // Flag untuk melacak status scanner
+
+    // Fungsi Navigasi (tetap sama)
+    window.showTab = (tabId) => {
+        document.querySelectorAll('.container').forEach(container => {
+            container.classList.remove('active');
+        });
+        document.querySelectorAll('.nav-item').forEach(navItem => {
+            navItem.classList.remove('active');
+        });
+
+        document.getElementById(tabId).classList.add('active');
+        const navItem = document.querySelector(`.nav-item[onclick="showTab('${tabId}')"]`);
+        if(navItem) navItem.classList.add('active');
         
-        let html5QrcodeScanner = null; 
-        const readerId = "reader";
+        // Logika memulai/menghentikan scanner
+        if (tabId === 'scan-qr') {
+            startScanner();
+        } else {
+            stopScanner();
+        }
+        
+        if (tabId === 'history') {
+            loadHistory();
+        }
 
-        // Fungsi Navigasi
-        window.showTab = (tabId) => {
-            document.querySelectorAll('.container').forEach(container => {
-                container.classList.remove('active');
-            });
-            document.querySelectorAll('.nav-item').forEach(navItem => {
-                navItem.classList.remove('active');
-            });
+        if (tabId !== 'add-guest') {
+            document.getElementById('result-area').style.display = 'none';
+        }
+    };
 
-            document.getElementById(tabId).classList.add('active');
-            const navItem = document.querySelector(`.nav-item[onclick="showTab('${tabId}')"]`);
-            if(navItem) navItem.classList.add('active');
-            
-            // Logika memulai/menghentikan scanner
-            if (tabId === 'scan-qr') {
-                startScanner();
-            } else {
-                stopScanner();
-            }
-            
-            if (tabId === 'history') {
-                loadHistory();
-            }
+    // --- SCANNER LOGIC ---
 
-            if (tabId !== 'add-guest') {
-                document.getElementById('result-area').style.display = 'none';
-            }
+    function startScanner() {
+        const scanResultDiv = document.getElementById('scan-result');
+        
+        if (isScannerActive) return;
+
+        if (!html5QrcodeScanner) {
+            html5QrcodeScanner = new Html5Qrcode(readerId);
+        }
+        
+        const config = {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
         };
 
-        // --- SCANNER LOGIC ---
-
-        function startScanner() {
-            const scanResultDiv = document.getElementById('scan-result');
-            
-            if (!html5QrcodeScanner) {
-                // Menggunakan Html5Qrcode dasar untuk kontrol UI manual
-                html5QrcodeScanner = new Html5Qrcode(readerId);
-            }
-            
-            const config = {
-                fps: 10,
-                qrbox: { width: 250, height: 250 },
-            };
-
-            // Memulai pemindaian secara manual (menyembunyikan UI default)
-            html5QrcodeScanner.start(
-                { facingMode: { exact: "environment" } }, // Kamera belakang
-                config,
-                onScanSuccess,
-                (errorMessage) => { /* ignore continuous error */ }
-            ).catch(err => {
-                console.error("Gagal memulai scanner (Cek izin kamera atau ketersediaan):", err);
-                scanResultDiv.innerHTML = `<span style="color:var(--primary); font-weight:bold;">❌ Gagal membuka kamera. Cek izin browser.</span>`;
-            });
-            
+        html5QrcodeScanner.start(
+            { facingMode: { exact: "environment" } }, // Kamera belakang
+            config,
+            onScanSuccess,
+            (errorMessage) => { /* ignore continuous error */ }
+        ).then(() => {
+            isScannerActive = true;
             scanResultDiv.textContent = 'Siap memindai QR Code...';
-        }
+        }).catch(err => {
+            console.error("Gagal memulai scanner:", err);
+            scanResultDiv.innerHTML = `<span style="color:var(--primary); font-weight:bold;">❌ Gagal membuka kamera. Cek izin browser.</span>`;
+        });
+    }
 
-        function stopScanner() {
-            if (html5QrcodeScanner && html5QrcodeScanner.isScanning) {
-                html5QrcodeScanner.stop().catch(err => {
-                    console.log("Error stopping scanner: ", err);
-                });
-                html5QrcodeScanner = null; // Reset
-            }
+    function stopScanner() {
+        if (html5QrcodeScanner && isScannerActive) {
+            html5QrcodeScanner.stop().catch(err => {
+                console.log("Error stopping scanner: ", err);
+            });
+            html5QrcodeScanner = null; 
+            isScannerActive = false;
         }
+    }
+    
+    // Fungsi baru untuk menutup notifikasi dan memulai ulang scanner
+    window.resetScannerAndStart = () => {
+        // Hapus notifikasi
+        document.getElementById('scan-result').innerHTML = 'Siap memindai QR Code...'; 
+        // Mulai scanner
+        startScanner();
+    }
+
+    async function onScanSuccess(decodedText, decodedResult) {
+        // HENTIKAN SCANNER, JANGAN DIBUAT OTOMATIS MULAI LAGI
+        stopScanner(); 
         
-        async function onScanSuccess(decodedText, decodedResult) {
-            stopScanner(); 
-            
-            const scanResultDiv = document.getElementById('scan-result');
-            scanResultDiv.textContent = `Memproses Kode: ${decodedText}...`;
-            
-            await sendCheckInRequest(decodedText);
-            
-            setTimeout(startScanner, 3000); 
-        }
+        const scanResultDiv = document.getElementById('scan-result');
+        scanResultDiv.textContent = `Memproses Kode: ${decodedText}...`;
+        
+        await sendCheckInRequest(decodedText);
+        
+        // CATATAN: Tidak ada setTimeout di sini. Tombol "Lanjut Scan" akan dipanggil dari sendCheckInRequest.
+    }
 
-        // Mengirim Kode Unik ke Apps Script (Logika Check-in)
-        async function sendCheckInRequest(code) {
-            const scanResultDiv = document.getElementById('scan-result');
+    // Mengirim Kode Unik ke Apps Script (Logika Check-in)
+    async function sendCheckInRequest(code) {
+        const scanResultDiv = document.getElementById('scan-result');
+        try {
+            const response = await fetch(googleAppScriptURL, {
+                method: 'POST',
+                mode: 'cors',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `action=checkIn&code=${encodeURIComponent(code)}`
+            });
+
+            const data = await response.json();
+            
+            const isSuccess = data.status === 'success';
+            const resultColor = isSuccess ? '#4CAF50' : 'var(--primary)';
+            const resultIcon = isSuccess ? '✅' : '❌';
+
+            let htmlContent = `<span style="color:${resultColor}; font-weight:bold;">${resultIcon} ${data.message}</span>`;
+            
+            // --- STRUKTUR NOTIFIKASI TAMBAHAN ---
+            if (data.name && data.kode) {
+                const statusColor = isSuccess ? '#4CAF50' : (data.statusText === 'HADIR' ? 'orange' : 'var(--primary)');
+                const isRegistered = data.name !== "TIDAK TERDAFTAR";
+
+                htmlContent += `
+                    <div style="text-align:left; margin-top:15px; padding:15px; background:rgba(255,255,255,0.05); border-radius:12px; border:1px solid rgba(255,255,255,0.1);">
+                        <p style="margin:2px 0; font-size:0.9rem;">Nama: <b style="color:var(--text-white);">${data.name}</b></p>
+                        <p style="margin:2px 0; font-size:0.9rem;">QR ID: <b style="color:var(--text-white);">${data.kode}</b></p>
+                        ${isRegistered ? `
+                            <p style="margin:2px 0; font-size:0.9rem;">Status: <b style="color:${statusColor};">${data.statusText || 'Gagal'}</b></p>
+                            <p style="margin:2px 0; font-size:0.8rem; color:var(--text-muted); border-top:1px dashed rgba(255,255,255,0.1); padding-top:5px; margin-top:5px;">Waktu: ${data.time || '-'}</p>
+                        ` : `<p style="margin:5px 0; color:var(--primary); font-size:0.8rem;">Kode tidak terdaftar dalam sistem.</p>`}
+                    </div>
+                `;
+            } else if (data.status === 'fail' && data.kode) {
+                 htmlContent += `<p style="margin-top:10px; font-size:0.9rem;">Kode ${data.kode} tidak terdaftar.</p>`;
+            }
+            
+            // --- TAMBAHKAN TOMBOL TUTUP MANUAL ---
+            htmlContent += `
+                <button onclick="resetScannerAndStart()" style="margin-top: 20px; width: 80%; background: #4CAF50; color: white;">
+                    Lanjut Scan
+                </button>
+            `;
+            
+            scanResultDiv.innerHTML = htmlContent;
+
+        } catch (error) {
+            console.error("Check-in Error:", error);
+            scanResultDiv.innerHTML = '<span style="color:var(--primary); font-weight:bold;">❌ Error Jaringan/Skrip.</span><p style="margin-top:5px; font-size:0.8rem;">Cek koneksi internet Anda.</p>';
+        }
+    }
+
+    // --- HISTORY LOGIC (tetap sama) ---
+    
+    document.getElementById('refreshHistoryBtn').addEventListener('click', loadHistory);
+
+    async function loadHistory() {
+        const listDiv = document.getElementById('history-list');
+        const statsDiv = document.getElementById('history-stats');
+        listDiv.innerHTML = '<div style="text-align:center; color:#666; margin-top:30px; font-style:italic;">Memuat data...</div>';
+        
+        try {
+            const response = await fetch(googleAppScriptURL, {
+                method: 'POST',
+                mode: 'cors',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `action=getHistory`
+            });
+
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                // Update Statistik
+                document.getElementById('totalGuests').textContent = data.total;
+                document.getElementById('hadirCount').textContent = data.hadir;
+                document.getElementById('belumHadirCount').textContent = data.belumHadir;
+
+                // Buat Daftar History
+                listDiv.innerHTML = '';
+                if (data.history.length === 0) {
+                    listDiv.innerHTML = '<div style="text-align:center; color:#666; margin-top:30px; font-style:italic;">Belum ada tamu yang terdaftar.</div>';
+                    return;
+                }
+
+                data.history.forEach(item => {
+                    const isHadir = item.status === 'HADIR';
+                    const itemClass = item.rowClass; 
+                    const badgeText = isHadir ? 'HADIR' : 'BELUM HADIR';
+                    const timeText = isHadir ? item.time : '';
+
+                    const itemHtml = `
+                        <div class="history-item ${itemClass}">
+                            <div class="h-info">
+                                <span class="h-name">${item.name}</span>
+                                <span class="h-time">${timeText}</span>
+                            </div>
+                            <div class="h-badge" style="background:${isHadir ? '#2e7d32' : 'var(--primary)'}; color:#fff;">${badgeText}</div>
+                        </div>
+                    `;
+                    listDiv.innerHTML += itemHtml;
+                });
+
+            } else {
+                listDiv.innerHTML = `<div style="text-align:center; color:var(--primary); margin-top:30px; font-weight:bold;">❌ Gagal memuat data history: ${data.message}</div>`;
+            }
+
+        } catch (error) {
+            listDiv.innerHTML = `<div style="text-align:center; color:var(--primary); margin-top:30px; font-weight:bold;">❌ Error Jaringan saat memuat History.</div>`;
+        }
+    }
+
+
+    // --- INPUT GUEST LOGIC (tetap sama) ---
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const generateLinkBtn = document.getElementById('generateLinkBtn');
+        const namaTamuInput = document.getElementById('namaTamu');
+        const resultArea = document.getElementById('result-area');
+        const resultMsg = document.getElementById('result-msg');
+        const resultLinkInput = document.getElementById('result-link');
+        const copyLinkBtn = document.getElementById('copyLinkBtn');
+
+        resultArea.style.display = 'none';
+
+        // Aksi Generate Link (Kirim ke Apps Script)
+        generateLinkBtn.addEventListener('click', async () => {
+            const namaTamu = namaTamuInput.value.trim();
+
+            if (namaTamu === "") {
+                alert("Nama Tamu tidak boleh kosong!");
+                return;
+            }
+
+            generateLinkBtn.disabled = true;
+            generateLinkBtn.textContent = 'Memproses... Harap Tunggu...';
+            resultArea.style.display = 'none';
+            resultLinkInput.value = 'Memproses...';
+
             try {
                 const response = await fetch(googleAppScriptURL, {
                     method: 'POST',
-                    mode: 'cors',
+                    mode: 'cors', 
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: `action=checkIn&code=${encodeURIComponent(code)}`
-                });
-
-                const data = await response.json();
-                
-                const isSuccess = data.status === 'success';
-                const resultColor = isSuccess ? '#4CAF50' : 'var(--primary)';
-                const resultIcon = isSuccess ? '✅' : '❌';
-
-                let htmlContent = `<span style="color:${resultColor}; font-weight:bold;">${resultIcon} ${data.message}</span>`;
-                
-                // --- STRUKTUR NOTIFIKASI TAMBAHAN ---
-                if (data.name && data.kode) {
-                    const statusColor = isSuccess ? '#4CAF50' : (data.statusText === 'HADIR' ? 'orange' : 'var(--primary)');
-                    const isRegistered = data.name !== "TIDAK TERDAFTAR";
-
-                    htmlContent += `
-                        <div style="text-align:left; margin-top:15px; padding:15px; background:rgba(255,255,255,0.05); border-radius:12px; border:1px solid rgba(255,255,255,0.1);">
-                            <p style="margin:2px 0; font-size:0.9rem;">Nama: <b style="color:var(--text-white);">${data.name}</b></p>
-                            <p style="margin:2px 0; font-size:0.9rem;">QR ID: <b style="color:var(--text-white);">${data.kode}</b></p>
-                            ${isRegistered ? `
-                                <p style="margin:2px 0; font-size:0.9rem;">Status: <b style="color:${statusColor};">${data.statusText || 'Gagal'}</b></p>
-                                <p style="margin:2px 0; font-size:0.8rem; color:var(--text-muted); border-top:1px dashed rgba(255,255,255,0.1); padding-top:5px; margin-top:5px;">Waktu: ${data.time || '-'}</p>
-                            ` : `<p style="margin:5px 0; color:var(--primary); font-size:0.8rem;">Kode tidak terdaftar dalam sistem.</p>`}
-                        </div>
-                    `;
-                } else if (data.status === 'fail' && data.kode) {
-                     htmlContent += `<p style="margin-top:10px; font-size:0.9rem;">Kode ${data.kode} tidak terdaftar.</p>`;
-                }
-                
-                scanResultDiv.innerHTML = htmlContent;
-
-            } catch (error) {
-                console.error("Check-in Error:", error);
-                scanResultDiv.innerHTML = '<span style="color:var(--primary); font-weight:bold;">❌ Error Jaringan/Skrip.</span><p style="margin-top:5px; font-size:0.8rem;">Cek koneksi internet Anda.</p>';
-            }
-        }
-
-        // --- HISTORY LOGIC ---
-        
-        document.getElementById('refreshHistoryBtn').addEventListener('click', loadHistory);
-
-        async function loadHistory() {
-            const listDiv = document.getElementById('history-list');
-            const statsDiv = document.getElementById('history-stats');
-            listDiv.innerHTML = '<div style="text-align:center; color:#666; margin-top:30px; font-style:italic;">Memuat data...</div>';
-            
-            try {
-                const response = await fetch(googleAppScriptURL, {
-                    method: 'POST',
-                    mode: 'cors',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: `action=getHistory`
+                    body: `action=addGuest&namaTamu=${encodeURIComponent(namaTamu)}`
                 });
 
                 const data = await response.json();
 
                 if (data.status === 'success') {
-                    // Update Statistik
-                    document.getElementById('totalGuests').textContent = data.total;
-                    document.getElementById('hadirCount').textContent = data.hadir;
-                    document.getElementById('belumHadirCount').textContent = data.belumHadir;
-
-                    // Buat Daftar History
-                    listDiv.innerHTML = '';
-                    if (data.history.length === 0) {
-                        listDiv.innerHTML = '<div style="text-align:center; color:#666; margin-top:30px; font-style:italic;">Belum ada tamu yang terdaftar.</div>';
-                        return;
-                    }
-
-                    data.history.forEach(item => {
-                        const isHadir = item.status === 'HADIR';
-                        const itemClass = item.rowClass; // Menggunakan rowClass dari Apps Script
-                        const badgeText = isHadir ? 'HADIR' : 'BELUM HADIR';
-                        const timeText = isHadir ? item.time : '';
-
-                        const itemHtml = `
-                            <div class="history-item ${itemClass}">
-                                <div class="h-info">
-                                    <span class="h-name">${item.name}</span>
-                                    <span class="h-time">${timeText}</span>
-                                </div>
-                                <div class="h-badge" style="background:${isHadir ? '#2e7d32' : 'var(--primary)'}; color:#fff;">${badgeText}</div>
-                            </div>
-                        `;
-                        listDiv.innerHTML += itemHtml;
-                    });
+                    resultMsg.innerHTML = `✅ Link berhasil dibuat: <b>${data.nama}</b> (Kode: ${data.kode})`;
+                    resultLinkInput.value = data.link;
+                    resultArea.style.display = 'block';
+                    copyLinkBtn.dataset.link = data.link;
+                    
+                    namaTamuInput.value = ''; 
+                    namaTamuInput.focus(); 
 
                 } else {
-                    listDiv.innerHTML = `<div style="text-align:center; color:var(--primary); margin-top:30px; font-weight:bold;">❌ Gagal memuat data history: ${data.message}</div>`;
+                    resultMsg.textContent = `❌ Gagal: ${data.message || 'Terjadi kesalahan pada skrip Apps Script.'}`;
+                    resultLinkInput.value = '';
+                    resultArea.style.display = 'block';
                 }
 
             } catch (error) {
-                listDiv.innerHTML = `<div style="text-align:center; color:var(--primary); margin-top:30px; font-weight:bold;">❌ Error Jaringan saat memuat History.</div>`;
+                console.error("Fetch Error:", error);
+                resultMsg.textContent = '❌ Terjadi kesalahan jaringan atau CORS.';
+                resultLinkInput.value = '';
+                resultArea.style.display = 'block';
+
+            } finally {
+                generateLinkBtn.disabled = false;
+                generateLinkBtn.textContent = 'Generate Link';
             }
-        }
-
-
-        // --- INPUT GUEST LOGIC ---
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const generateLinkBtn = document.getElementById('generateLinkBtn');
-            const namaTamuInput = document.getElementById('namaTamu');
-            const resultArea = document.getElementById('result-area');
-            const resultMsg = document.getElementById('result-msg');
-            const resultLinkInput = document.getElementById('result-link');
-            const copyLinkBtn = document.getElementById('copyLinkBtn');
-
-            resultArea.style.display = 'none';
-
-            // Aksi Generate Link (Kirim ke Apps Script)
-            generateLinkBtn.addEventListener('click', async () => {
-                const namaTamu = namaTamuInput.value.trim();
-
-                if (namaTamu === "") {
-                    alert("Nama Tamu tidak boleh kosong!");
-                    return;
-                }
-
-                generateLinkBtn.disabled = true;
-                generateLinkBtn.textContent = 'Memproses... Harap Tunggu...';
-                resultArea.style.display = 'none';
-                resultLinkInput.value = 'Memproses...';
-
-                try {
-                    const response = await fetch(googleAppScriptURL, {
-                        method: 'POST',
-                        mode: 'cors', 
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                        body: `action=addGuest&namaTamu=${encodeURIComponent(namaTamu)}`
-                    });
-
-                    const data = await response.json();
-
-                    if (data.status === 'success') {
-                        resultMsg.innerHTML = `✅ Link berhasil dibuat: <b>${data.nama}</b> (Kode: ${data.kode})`;
-                        resultLinkInput.value = data.link;
-                        resultArea.style.display = 'block';
-                        copyLinkBtn.dataset.link = data.link;
-                        
-                        namaTamuInput.value = ''; 
-                        namaTamuInput.focus(); 
-
-                    } else {
-                        resultMsg.textContent = `❌ Gagal: ${data.message || 'Terjadi kesalahan pada skrip Apps Script.'}`;
-                        resultLinkInput.value = '';
-                        resultArea.style.display = 'block';
-                    }
-
-                } catch (error) {
-                    console.error("Fetch Error:", error);
-                    resultMsg.textContent = '❌ Terjadi kesalahan jaringan atau CORS.';
-                    resultLinkInput.value = '';
-                    resultArea.style.display = 'block';
-
-                } finally {
-                    generateLinkBtn.disabled = false;
-                    generateLinkBtn.textContent = 'Generate Link';
-                }
-            });
-            
-            // Aksi Salin Link
-            copyLinkBtn.addEventListener('click', () => {
-                const linkToCopy = resultLinkInput.value.trim();
-                
-                if (!linkToCopy || linkToCopy.includes('Memproses') || linkToCopy.includes('akan muncul')) {
-                    alert("Silakan Generate link undangan terlebih dahulu.");
-                    return;
-                }
-                
-                navigator.clipboard.writeText(linkToCopy)
-                    .then(() => {
-                        alert(`Link undangan berhasil disalin: ${linkToCopy}`);
-                    })
-                    .catch(err => {
-                        console.error('Gagal menyalin:', err);
-                        alert('Gagal menyalin. Mohon salin teks link manual.');
-                    });
-            });
-
-            // Inisialisasi: Pastikan tab 'add-guest' yang aktif
-            showTab('add-guest');
         });
-    </script>
+        
+        // Aksi Salin Link
+        copyLinkBtn.addEventListener('click', () => {
+            const linkToCopy = resultLinkInput.value.trim();
+            
+            if (!linkToCopy || linkToCopy.includes('Memproses') || linkToCopy.includes('akan muncul')) {
+                alert("Silakan Generate link undangan terlebih dahulu.");
+                return;
+            }
+            
+            navigator.clipboard.writeText(linkToCopy)
+                .then(() => {
+                    alert(`Link undangan berhasil disalin: ${linkToCopy}`);
+                })
+                .catch(err => {
+                    console.error('Gagal menyalin:', err);
+                    alert('Gagal menyalin. Mohon salin teks link manual.');
+                });
+        });
+
+        // Inisialisasi: Pastikan tab 'add-guest' yang aktif
+        showTab('add-guest');
+    });
+</script>
 </body>
 </html>
