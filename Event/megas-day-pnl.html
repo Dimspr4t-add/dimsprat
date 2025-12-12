@@ -446,205 +446,210 @@
     </nav>
 
     <script>
-        // =======================================================================
-        // URL WEB APP GOOGLE APPS SCRIPT ANDA YANG TELAH DISIMPAN
-        // =======================================================================
-        const googleAppScriptURL = 'https://script.google.com/macros/s/AKfycbzANeVqUwGAImpQ5_DCRyHW0tU8KUhGRaiI6dROVPeGupJuG0pWP7oUh1uFXCFc6kJd/exec'; 
+    // =======================================================================
+    // URL WEB APP GOOGLE APPS SCRIPT ANDA
+    // =======================================================================
+    const googleAppScriptURL = 'https://script.google.com/macros/s/AKfycbzANeVqUwGAImpQ5_DCRyHW0tU8KUhGRaiI6dROVPeGupJuG0pWP7oUh1uFXCFc6kJd/exec'; 
+    
+    let html5QrcodeScanner = null; 
+
+    // Fungsi Navigasi
+    window.showTab = (tabId) => {
+        document.querySelectorAll('.container').forEach(container => {
+            container.classList.remove('active');
+        });
+        document.querySelectorAll('.nav-item').forEach(navItem => {
+            navItem.classList.remove('active');
+        });
+
+        document.getElementById(tabId).classList.add('active');
+        const navItem = document.querySelector(`.nav-item[onclick="showTab('${tabId}')"]`);
+        if(navItem) navItem.classList.add('active');
         
-        let html5QrcodeScanner = null; 
+        // Logika memulai/menghentikan scanner
+        if (tabId === 'scan-qr') {
+            startScanner();
+        } else {
+            stopScanner();
+        }
+        
+        if (tabId !== 'add-guest') {
+            document.getElementById('result-area').style.display = 'none';
+        }
+    };
 
-        // Fungsi Navigasi
-        window.showTab = (tabId) => {
-            document.querySelectorAll('.container').forEach(container => {
-                container.classList.remove('active');
+    // --- SCANNER LOGIC (Optimized) ---
+
+    function startScanner() {
+        const scanResultDiv = document.getElementById('scan-result');
+        const readerId = "reader";
+        
+        // Jika scanner belum pernah diinisialisasi
+        if (!html5QrcodeScanner) {
+            html5QrcodeScanner = new Html5QrcodeScanner(
+                readerId, { 
+                    fps: 10, 
+                    qrbox: { width: 250, height: 250 },
+                    // Meminta kamera belakang secara eksplisit
+                    videoConstraints: {
+                        facingMode: { exact: "environment" } 
+                    }
+                }, 
+                false
+            );
+        }
+        
+        // Render scanner untuk memulai pemindaian
+        html5QrcodeScanner.render(onScanSuccess, onScanError);
+        scanResultDiv.textContent = 'Siap memindai QR Code...';
+    }
+
+    function stopScanner() {
+        if (html5QrcodeScanner) {
+            // Menghentikan dan membersihkan scanner
+            html5QrcodeScanner.stop().catch(err => {
+                // Biasanya error jika kamera sudah berhenti, tidak perlu panik
+                console.log("Error stopping scanner (may be safe to ignore): ", err);
             });
-            document.querySelectorAll('.nav-item').forEach(navItem => {
-                navItem.classList.remove('active');
+            html5QrcodeScanner = null; // Reset
+        }
+    }
+    
+    async function onScanSuccess(decodedText, decodedResult) {
+        // Hentikan scanner saat pemindaian pertama berhasil
+        stopScanner(); 
+        
+        const scanResultDiv = document.getElementById('scan-result');
+        scanResultDiv.textContent = `Memproses Kode: ${decodedText}...`;
+        
+        // Kirim kode yang dipindai untuk check-in
+        await sendCheckInRequest(decodedText);
+        
+        // Lanjutkan pemindaian setelah jeda 3 detik
+        setTimeout(startScanner, 3000); 
+    }
+
+    function onScanError(errorMessage) {
+        // Mengabaikan error pemindaian terus menerus
+    }
+
+    // Mengirim Kode Unik ke Apps Script (Logika Check-in)
+    async function sendCheckInRequest(code) {
+        const scanResultDiv = document.getElementById('scan-result');
+        try {
+            const response = await fetch(googleAppScriptURL, {
+                method: 'POST',
+                mode: 'cors',
+                headers: {
+                    // Penting: Menggunakan format form-urlencoded agar Apps Script dapat membaca e.parameter
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                // Payload: Mengirim action dan code
+                body: `action=checkIn&code=${encodeURIComponent(code)}`
             });
 
-            document.getElementById(tabId).classList.add('active');
-            const navItem = document.querySelector(`.nav-item[onclick="showTab('${tabId}')"]`);
-            if(navItem) navItem.classList.add('active');
+            const data = await response.json();
             
-            // Logika memulai/menghentikan scanner
-            if (tabId === 'scan-qr') {
-                startScanner();
+            if (data.status === 'success') {
+                scanResultDiv.innerHTML = `<span style="color:#4CAF50; font-weight:bold;">✅ ${data.message}</span>`;
             } else {
-                stopScanner();
+                scanResultDiv.innerHTML = `<span style="color:var(--primary); font-weight:bold;">❌ ${data.message}</span>`;
             }
-            
-            if (tabId !== 'add-guest') {
-                document.getElementById('result-area').style.display = 'none';
+
+        } catch (error) {
+            console.error("Check-in Error:", error);
+            scanResultDiv.innerHTML = '<span style="color:var(--primary); font-weight:bold;">❌ Error Jaringan/Skrip.</span>';
+        }
+    }
+
+    // --- INPUT GUEST LOGIC (TIDAK BERUBAH) ---
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const generateLinkBtn = document.getElementById('generateLinkBtn');
+        const namaTamuInput = document.getElementById('namaTamu');
+        const resultArea = document.getElementById('result-area');
+        const resultMsg = document.getElementById('result-msg');
+        const resultLinkInput = document.getElementById('result-link');
+        const copyLinkBtn = document.getElementById('copyLinkBtn');
+
+        resultArea.style.display = 'none';
+
+        // Aksi Generate Link (Kirim ke Apps Script)
+        generateLinkBtn.addEventListener('click', async () => {
+            const namaTamu = namaTamuInput.value.trim();
+
+            if (namaTamu === "") {
+                alert("Nama Tamu tidak boleh kosong!");
+                return;
             }
-        };
 
-        // --- SCANNER LOGIC ---
+            generateLinkBtn.disabled = true;
+            generateLinkBtn.textContent = 'Memproses... Harap Tunggu...';
+            resultArea.style.display = 'none';
+            resultLinkInput.value = 'Memproses...';
 
-        function startScanner() {
-            const scanResultDiv = document.getElementById('scan-result');
-            const readerId = "reader";
-            
-            if (!html5QrcodeScanner) {
-                // Inisialisasi scanner hanya sekali
-                html5QrcodeScanner = new Html5QrcodeScanner(
-                    readerId, { 
-                        fps: 10, 
-                        qrbox: { width: 250, height: 250 },
-                        // Konfigurasi EKSPLISIT untuk kamera belakang
-                        videoConstraints: {
-                            facingMode: { exact: "environment" } 
-                        }
-                    }, 
-                    false
-                );
-            }
-            
-            // Render scanner
-            html5QrcodeScanner.render(onScanSuccess, onScanError);
-            scanResultDiv.textContent = 'Siap memindai QR Code...';
-        }
-
-        function stopScanner() {
-            if (html5QrcodeScanner) {
-                // Menggunakan .stop() yang disediakan oleh library
-                html5QrcodeScanner.stop().catch(err => {
-                    console.log("Error stopping scanner: ", err);
-                });
-                html5QrcodeScanner = null; // Reset scanner
-            }
-        }
-        
-        async function onScanSuccess(decodedText, decodedResult) {
-            stopScanner(); // Hentikan scanner segera setelah scan berhasil
-            
-            const scanResultDiv = document.getElementById('scan-result');
-            scanResultDiv.textContent = `Memproses Kode: ${decodedText}...`;
-            
-            await sendCheckInRequest(decodedText);
-            
-            // Lanjutkan pemindaian setelah 3 detik
-            setTimeout(startScanner, 3000); 
-        }
-
-        function onScanError(errorMessage) {
-            // console.warn(`QR Code scanning error: ${errorMessage}`);
-        }
-
-        async function sendCheckInRequest(code) {
-            const scanResultDiv = document.getElementById('scan-result');
             try {
                 const response = await fetch(googleAppScriptURL, {
                     method: 'POST',
-                    mode: 'cors',
+                    mode: 'cors', 
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: `action=checkIn&code=${encodeURIComponent(code)}`
+                    body: `action=addGuest&namaTamu=${encodeURIComponent(namaTamu)}`
                 });
 
                 const data = await response.json();
-                
+
                 if (data.status === 'success') {
-                    scanResultDiv.innerHTML = `<span style="color:#4CAF50; font-weight:bold;">✅ ${data.message}</span>`;
+                    resultMsg.innerHTML = `✅ Link berhasil dibuat: <b>${data.nama}</b> (Kode: ${data.kode})`;
+                    resultLinkInput.value = data.link;
+                    resultArea.style.display = 'block';
+                    copyLinkBtn.dataset.link = data.link;
+                    
+                    namaTamuInput.value = ''; 
+                    namaTamuInput.focus(); 
+
                 } else {
-                    scanResultDiv.innerHTML = `<span style="color:var(--primary); font-weight:bold;">❌ ${data.message}</span>`;
+                    resultMsg.textContent = `❌ Gagal: ${data.message || 'Terjadi kesalahan pada skrip Apps Script.'}`;
+                    resultLinkInput.value = '';
+                    resultArea.style.display = 'block';
                 }
 
             } catch (error) {
-                console.error("Check-in Error:", error);
-                scanResultDiv.innerHTML = '<span style="color:var(--primary); font-weight:bold;">❌ Error Jaringan/Skrip.</span>';
+                console.error("Fetch Error:", error);
+                resultMsg.textContent = '❌ Terjadi kesalahan jaringan atau CORS.';
+                resultLinkInput.value = '';
+                resultArea.style.display = 'block';
+
+            } finally {
+                generateLinkBtn.disabled = false;
+                generateLinkBtn.textContent = 'Generate Link';
             }
-        }
-
-        // --- INPUT GUEST LOGIC ---
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const generateLinkBtn = document.getElementById('generateLinkBtn');
-            const namaTamuInput = document.getElementById('namaTamu');
-            const resultArea = document.getElementById('result-area');
-            const resultMsg = document.getElementById('result-msg');
-            const resultLinkInput = document.getElementById('result-link');
-            const copyLinkBtn = document.getElementById('copyLinkBtn');
-
-            resultArea.style.display = 'none';
-
-            // Aksi Generate Link (Kirim ke Apps Script)
-            generateLinkBtn.addEventListener('click', async () => {
-                const namaTamu = namaTamuInput.value.trim();
-
-                if (namaTamu === "") {
-                    alert("Nama Tamu tidak boleh kosong!");
-                    return;
-                }
-
-                generateLinkBtn.disabled = true;
-                generateLinkBtn.textContent = 'Memproses... Harap Tunggu...';
-                resultArea.style.display = 'none';
-                resultLinkInput.value = 'Memproses...';
-
-                try {
-                    const response = await fetch(googleAppScriptURL, {
-                        method: 'POST',
-                        mode: 'cors', 
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                        body: `action=addGuest&namaTamu=${encodeURIComponent(namaTamu)}`
-                    });
-
-                    const data = await response.json();
-
-                    if (data.status === 'success') {
-                        resultMsg.innerHTML = `✅ Link berhasil dibuat: <b>${data.nama}</b> (Kode: ${data.kode})`;
-                        resultLinkInput.value = data.link;
-                        resultArea.style.display = 'block';
-                        copyLinkBtn.dataset.link = data.link;
-                        
-                        namaTamuInput.value = ''; 
-                        namaTamuInput.focus(); 
-
-                    } else {
-                        resultMsg.textContent = `❌ Gagal: ${data.message || 'Terjadi kesalahan pada skrip Apps Script.'}`;
-                        resultLinkInput.value = '';
-                        resultArea.style.display = 'block';
-                    }
-
-                } catch (error) {
-                    console.error("Fetch Error:", error);
-                    resultMsg.textContent = '❌ Terjadi kesalahan jaringan atau CORS.';
-                    resultLinkInput.value = '';
-                    resultArea.style.display = 'block';
-
-                } finally {
-                    generateLinkBtn.disabled = false;
-                    generateLinkBtn.textContent = 'Generate Link';
-                }
-            });
+        });
+        
+        // Aksi Salin Link
+        copyLinkBtn.addEventListener('click', () => {
+            const linkToCopy = resultLinkInput.value.trim();
             
-            // Aksi Salin Link
-            copyLinkBtn.addEventListener('click', () => {
-                const linkToCopy = resultLinkInput.value.trim();
-                
-                if (!linkToCopy || linkToCopy.includes('Memproses') || linkToCopy.includes('akan muncul')) {
-                    alert("Silakan Generate link undangan terlebih dahulu.");
-                    return;
-                }
-                
-                navigator.clipboard.writeText(linkToCopy)
-                    .then(() => {
-                        alert(`Link undangan berhasil disalin: ${linkToCopy}`);
-                    })
-                    .catch(err => {
-                        console.error('Gagal menyalin:', err);
-                        alert('Gagal menyalin. Mohon salin teks link manual.');
-                    });
-            });
-
-            // Inisialisasi: Pastikan tab 'add-guest' yang aktif dan scanner dihentikan
-            showTab('add-guest');
+            if (!linkToCopy || linkToCopy.includes('Memproses') || linkToCopy.includes('akan muncul')) {
+                alert("Silakan Generate link undangan terlebih dahulu.");
+                return;
+            }
+            
+            navigator.clipboard.writeText(linkToCopy)
+                .then(() => {
+                    alert(`Link undangan berhasil disalin: ${linkToCopy}`);
+                })
+                .catch(err => {
+                    console.error('Gagal menyalin:', err);
+                    alert('Gagal menyalin. Mohon salin teks link manual.');
+                });
         });
 
-    </script>
+        // Inisialisasi: Pastikan tab 'add-guest' yang aktif
+        showTab('add-guest');
+    });
+</script>
 </body>
 
 </html>
