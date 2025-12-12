@@ -6,7 +6,7 @@
     <title>Mega's Day Invitation</title>
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@300;500;700&display=swap" rel="stylesheet">
     <style>
-        /* --- STYLE CSS ASLI ANDA --- */
+        /* --- RESET & BASIC SETUP --- */
         :root {
             --gold: #c9a227;
             --gold-light: #ffd700;
@@ -14,7 +14,7 @@
             --dark-overlay: rgba(0, 0, 0, 0.95);
         }
 
-        * { 
+        * {  
             box-sizing: border-box; 
             margin: 0; 
             padding: 0; 
@@ -45,12 +45,11 @@
             object-position: center center;
             z-index: -10;
             filter: brightness(0.4) blur(1px); 
-            /* PERUBAHAN DI SINI */
-            transform: scale(1.15); 
+            transform: scale(1.15); /* Diperbesar 1.15x */
         }
 
-        /* --- LAYAR PEMBUKA (COVER) --- */
-        #cover-screen {
+        /* --- LAYAR KHUSUS (COVER, ERROR, THANK YOU) --- */
+        .full-screen-overlay {
             position: fixed;
             top: 0; 
             left: 0;
@@ -65,6 +64,11 @@
             transition: opacity 0.8s ease-in-out;
             text-align: center;
             padding: 20px;
+        }
+
+        /* Cover Screen */
+        #cover-screen {
+            display: none; /* Akan diaktifkan oleh JS jika valid */
         }
 
         .cover-title {
@@ -119,6 +123,36 @@
             background: rgba(201, 162, 39, 0.2); 
         }
 
+        /* Error / Thank You Screen */
+        #error-screen, #thank-you-screen {
+             z-index: 9999;
+             display: none;
+             opacity: 0;
+             transition: opacity 0.8s ease-in-out;
+        }
+        
+        #error-screen.show, #thank-you-screen.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        .ty-title { 
+            font-family: 'Great Vibes'; 
+            font-size: 4rem; 
+            margin-bottom: 20px; 
+            animation: pulse 2s infinite; 
+            color: var(--gold);
+        }
+        
+        .ty-msg { 
+            font-family: 'Montserrat'; 
+            font-size: 1rem; 
+            color: #fff; 
+            letter-spacing: 2px; 
+            max-width: 80%; 
+            line-height: 1.6; 
+        }
+        
         /* --- KARTU UNDANGAN UTAMA --- */
         .content {
             position: relative;
@@ -310,52 +344,28 @@
                 opacity: 0.8; 
             } 
         }
-
-        /* THANK YOU SCREEN */
-        #thank-you-screen {
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%;
-            background: rgba(0,0,0,0.95); 
-            z-index: 2000;
-            display: none; 
-            flex-direction: column; 
-            justify-content: center; 
-            align-items: center;
-            text-align: center; 
-            color: var(--gold);
-        }
-        
-        .ty-title { 
-            font-family: 'Great Vibes'; 
-            font-size: 4rem; 
-            margin-bottom: 20px; 
-            animation: pulse 2s infinite; 
-        }
-        
-        .ty-msg { 
-            font-family: 'Montserrat'; 
-            font-size: 1rem; 
-            color: #fff; 
-            letter-spacing: 2px; 
-            max-width: 80%; 
-            line-height: 1.6; 
-        }
     </style>
 </head>
 <body>
-    <div id="thank-you-screen">
-        <div class="ty-title">Thank You</div>
+    
+    <div id="error-screen" class="full-screen-overlay">
+        <div class="ty-title" style="font-size: 3rem;">Akses Ditolak</div>
         <div class="ty-msg">
-            Your attendance has been verified.<br>
-            Please enjoy the party!
+            <p style="color:var(--gold);">Link undangan ini tidak valid atau sudah kadaluarsa.</p>
+            <p style="margin-top: 20px; font-size:0.8rem; color: #ccc;">Silakan hubungi panitia acara jika Anda yakin ini adalah kesalahan.</p>
         </div>
-        <div style="font-size:3rem; margin-top:20px;">✨</div>
+    </div>
+    
+    <div id="thank-you-screen" class="full-screen-overlay">
+        <div class="ty-title">Terima Kasih</div>
+        <div class="ty-msg">
+            <p>Konfirmasi kehadiran Anda telah terverifikasi.</p>
+            <p style="margin-top: 10px;">Sampai jumpa di hari spesial Mega!</p>
+        </div>
+        <div style="font-size:3rem; margin-top:20px;">🎉</div>
     </div>
 
-    <div id="cover-screen">
+    <div id="cover-screen" class="full-screen-overlay">
         <div class="cover-title">Mega's Day</div>
         <div class="cover-guest-label">You Are Invited</div>
         <div id="cover-guest-name">Memuat...</div>
@@ -406,13 +416,16 @@
 
     <script>
         // =======================================================================
-        // ⚠️ GANTI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA YANG BERAKHIR /exec
+        // URL WEB APP GOOGLE APPS SCRIPT ANDA
         // =======================================================================
+        const googleAppScriptURL = 'https://script.google.com/macros/s/AKfycbzANeVqUwGAImpQ5_DCRyHW0tU8KUhGRaiI6dROVPeGupJuG0pWP7oUh1uFXCFc6kJd/exec'; 
+        
         const APP_CONFIG = {
-            apiUrl: 'PASTE_URL_WEB_APP_ANDA_DI_SINI',
             guestName: 'Tamu Undangan',
             uniqueCode: null
         };
+        
+        let statusCheckInterval = null;
 
         /**
          * Fungsi utilitas untuk membaca parameter 'nama' dan 'id' dari URL.
@@ -428,33 +441,40 @@
             return params;
         }
 
-        // Inisialisasi saat DOM siap
+        // --- VALIDASI & INIALISASI UTAMA ---
         document.addEventListener('DOMContentLoaded', () => {
             const urlParams = getQueryParams();
+            const guestName = urlParams['nama'];
+            const uniqueCode = urlParams['id'];
 
-            // 1. Ambil nama & kode unik dari URL
-            const guestName = urlParams['nama'] || 'Tamu Istimewa';
-            const uniqueCode = urlParams['id'] || null;
+            // 1. VALIDASI AKSES: Periksa apakah parameter kunci ada
+            if (!uniqueCode || !guestName) {
+                document.getElementById('error-screen').classList.add('show');
+                return; 
+            }
 
+            // Inisialisasi Konfigurasi
             APP_CONFIG.guestName = guestName;
             APP_CONFIG.uniqueCode = uniqueCode;
 
-            // 2. Terapkan nama tamu ke Cover dan Konten Utama
+            // Terapkan nama tamu ke Cover dan Konten Utama
             document.getElementById('cover-guest-name').textContent = guestName;
             document.getElementById('guest-name-main').textContent = guestName;
+
+            // Tampilkan Cover Screen (sebelumnya disembunyikan)
+            document.getElementById('cover-screen').style.display = 'flex';
+            document.getElementById('cover-screen').style.opacity = '1';
+
+            // Generate QR Code (QR Code ID is the unique code)
+            generateQrCode();
             
-            // 3. Generate QR Code
-            if (APP_CONFIG.uniqueCode) {
-                generateQrCode();
-                startStatusCheck(); // Mulai cek status hanya jika kode unik ada
-            } else {
-                // Sembunyikan QR jika tidak ada kode unik
-                document.querySelector('.qr-section').style.display = 'none';
-            }
+            // Mulai cek status segera
+            startStatusCheck();
             
             // Inisialisasi partikel
             initParticles();
         });
+
 
         // Fungsi untuk generate QR Code
         function generateQrCode() {
@@ -462,9 +482,8 @@
             
             document.getElementById('qrcode').innerHTML = '';
             
-            // Data QR adalah HANYA KODE UNIK (untuk discan oleh admin)
             new QRCode(document.getElementById('qrcode'), {
-                text: APP_CONFIG.uniqueCode,
+                text: APP_CONFIG.uniqueCode, // QR berisi Kode Unik untuk discan
                 width: 180,
                 height: 180,
                 colorDark: '#000000',
@@ -473,58 +492,75 @@
             });
         }
 
-        // FUNGSI UNTUK CHECK STATUS (Membutuhkan Apps Script API tambahan)
+        /**
+         * Fungsi untuk mengecek status kehadiran ke Apps Script.
+         * @returns {boolean} True jika sudah HADIR.
+         */
         async function checkStatus() {
-            if (!APP_CONFIG.uniqueCode || APP_CONFIG.apiUrl === 'PASTE_URL_WEB_APP_ANDA_DI_SINI') return false;
+            if (!APP_CONFIG.uniqueCode) return false;
             
             try {
-                // Mengirim Kode Unik untuk mengecek apakah sudah hadir
-                const response = await fetch(APP_CONFIG.apiUrl, {
+                const response = await fetch(googleAppScriptURL, {
                     method: 'POST',
                     mode: 'cors',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        action: 'checkStatus', // Action baru untuk Apps Script
+                        action: 'checkStatus',
                         code: APP_CONFIG.uniqueCode
                     })
                 });
                 
                 const data = await response.json();
-                // Asumsi Apps Script mengembalikan { checkedIn: true/false }
                 return data.checkedIn || false; 
                 
             } catch (error) {
-                console.warn('Warning: Status check API is not yet configured or failed.', error);
+                console.warn('Warning: Status check API error. Assuming not checked in.', error);
                 return false;
             }
         }
 
         // Fungsi untuk memulai pengecekan status (polling)
         function startStatusCheck() {
-            // Cek status setiap 5 detik
-            const checkInterval = setInterval(async () => {
+            if (statusCheckInterval) clearInterval(statusCheckInterval); // Bersihkan interval lama
+            
+            // Lakukan cek status pertama kali
+            checkStatus().then(isCheckedIn => {
+                if (isCheckedIn) {
+                    showThankYouScreen();
+                    return;
+                }
+            });
+            
+            // Lanjutkan cek setiap 5 detik
+            statusCheckInterval = setInterval(async () => {
                 const isCheckedIn = await checkStatus();
                 if (isCheckedIn) {
-                    clearInterval(checkInterval);
+                    clearInterval(statusCheckInterval);
                     showThankYouScreen();
                 }
             }, 5000);
         }
 
-        // Fungsi untuk menampilkan layar terima kasih
+        // Fungsi untuk menampilkan layar terima kasih (Pengunci)
         function showThankYouScreen() {
+            const cover = document.getElementById('cover-screen');
             const mainContent = document.getElementById('main-content');
             const thankYouScreen = document.getElementById('thank-you-screen');
             
+            // Hentikan semua konten
+            cover.style.display = 'none';
             mainContent.style.display = 'none';
-            thankYouScreen.style.display = 'flex';
             
-            // Animasi muncul
-            setTimeout(() => {
-                thankYouScreen.style.opacity = '1';
-            }, 100);
+            // Tampilkan layar terima kasih
+            thankYouScreen.classList.add('show');
+            
+            // Hentikan audio
+            const audio = document.getElementById('bg-music');
+            audio.pause();
+            audio.currentTime = 0;
+            
+            // Hentikan polling
+            if (statusCheckInterval) clearInterval(statusCheckInterval);
         }
 
         // Fungsi untuk membuka undangan
@@ -532,25 +568,32 @@
             const cover = document.getElementById('cover-screen');
             const mainContent = document.getElementById('main-content');
             
-            // Animasi fade out
-            cover.style.transition = 'opacity 1s ease-out';
-            cover.style.opacity = '0';
-            
-            // Tampilkan konten utama setelah animasi selesai
-            setTimeout(() => {
-                cover.style.display = 'none';
-                mainContent.style.display = 'flex'; // Tampilkan sebagai flex
-                mainContent.classList.add('show');
+            // Periksa status terakhir sebelum membuka
+            checkStatus().then(isCheckedIn => {
+                if (isCheckedIn) {
+                    showThankYouScreen();
+                    return;
+                }
                 
-                // Mulai audio
-                const audio = document.getElementById('bg-music');
-                audio.volume = 0.3;
-                audio.play().catch(e => console.log('Audio play failed:', e));
+                // Animasi fade out cover
+                cover.style.transition = 'opacity 1s ease-out';
+                cover.style.opacity = '0';
                 
-            }, 800);
+                // Tampilkan konten utama setelah animasi selesai
+                setTimeout(() => {
+                    cover.style.display = 'none';
+                    mainContent.style.display = 'flex'; // Tampilkan sebagai flex
+                    mainContent.classList.add('show');
+                    
+                    // Mulai audio
+                    const audio = document.getElementById('bg-music');
+                    audio.volume = 0.3;
+                    audio.play().catch(e => console.log('Audio play failed:', e));
+                }, 800);
+            });
         }
         
-        // Fungsi untuk inisialisasi partikel (tetap dari kode asli)
+        // Fungsi untuk inisialisasi partikel (tidak berubah)
         function initParticles() {
             const container = document.getElementById('particles');
             const particleCount = 30;
@@ -559,15 +602,11 @@
                 const particle = document.createElement('div');
                 particle.className = 'particle';
                 
-                // Atur ukuran acak
                 const size = Math.random() * 8 + 2;
                 particle.style.width = `${size}px`;
                 particle.style.height = `${size}px`;
-                
-                // Posisi horizontal acak
                 particle.style.left = `${Math.random() * 100}%`;
                 
-                // Animasi dengan durasi dan delay acak
                 const duration = Math.random() * 5 + 5;
                 const delay = Math.random() * 5;
                 particle.style.animation = `floatUp ${duration}s linear ${delay}s infinite`;
